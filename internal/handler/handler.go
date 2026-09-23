@@ -44,16 +44,14 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 
 	ok, res := model.Get(urlCode[1:])
 
-	w.Write([]byte(urlCode[1:]))
-
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("not found"))
 		return
 	}
 
-	w.WriteHeader(http.StatusPermanentRedirect)
 	w.Header().Add("Location", res)
+	w.WriteHeader(http.StatusPermanentRedirect)
 }
 
 func HandleShortenerRequest(w http.ResponseWriter, r *http.Request) {
