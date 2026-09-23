@@ -51,7 +51,7 @@ func handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Add("Location", res)
-	w.WriteHeader(http.StatusPermanentRedirect)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func HandleShortenerRequest(w http.ResponseWriter, r *http.Request) {
