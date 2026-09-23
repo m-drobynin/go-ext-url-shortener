@@ -34,6 +34,7 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 
 	model.Put(generatedURLCode, originalURL)
 
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("http://localhost:8080/" + generatedURLCode))
 }
