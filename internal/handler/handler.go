@@ -42,7 +42,9 @@ func handleSave(w http.ResponseWriter, r *http.Request) {
 func handleGet(w http.ResponseWriter, r *http.Request) {
 	var urlCode = r.URL.Path
 
-	ok, res := model.Get(urlCode)
+	ok, res := model.Get(urlCode[1:])
+
+	w.Write([]byte(urlCode[1:]))
 
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
