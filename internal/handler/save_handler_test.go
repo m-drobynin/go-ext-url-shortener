@@ -22,14 +22,14 @@ type SaveTestCase struct {
 
 func TestSaveHandler(t *testing.T) {
 	var database = model.CreateDatabase()
-	var existingUrl = "existing_url"
-	database.Put("existing_key", existingUrl)
+	var existingURL = "existing_url"
+	database.Put("existing_key", existingURL)
 
 	var handler = buildSaveHandler(&database)
 
 	var plainContentType = "text/plain"
 	var emptyStr = ""
-	var validUrl = "http://example.com/path"
+	var validURL = "http://example.com/path"
 	var emptyBodyMessage = "empty body"
 	var badRequestBodyMessage = "bad request"
 	var validBodyMessage = "localhost:8080"
@@ -56,14 +56,14 @@ func TestSaveHandler(t *testing.T) {
 		{
 			name: "invalid header",
 
-			url: &validUrl,
+			url: &validURL,
 
 			expectedCode: http.StatusBadRequest,
 			expectedBody: &badRequestBodyMessage,
 		},
 		{
 			name:        "valid request",
-			url:         &validUrl,
+			url:         &validURL,
 			contentType: &plainContentType,
 
 			expectedCode: http.StatusCreated,

@@ -20,8 +20,8 @@ type GetTestCase struct {
 
 func TestGetHandler(t *testing.T) {
 	var database = model.CreateDatabase()
-	var existingUrl = "existing_url"
-	database.Put("existing_key", existingUrl)
+	var existingURL = "existing_url"
+	database.Put("existing_key", existingURL)
 
 	var handler = buildGetHandler(&database)
 
@@ -47,7 +47,7 @@ func TestGetHandler(t *testing.T) {
 			url:  "http://localhost:8080/existing_key",
 
 			expectedCode:           http.StatusTemporaryRedirect,
-			expectedLocationHeader: &existingUrl,
+			expectedLocationHeader: &existingURL,
 		},
 	}
 

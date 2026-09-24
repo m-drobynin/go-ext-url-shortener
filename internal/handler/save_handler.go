@@ -27,20 +27,20 @@ func handleCreatedResponse(w http.ResponseWriter, code string) {
 	w.Write([]byte("http://localhost:8080/" + code))
 }
 
-func saveUrl(db *model.Database, body []byte) (error, *string) {
+func saveURL(db *model.Database, body []byte) (*string, error) {
 	if len(body) == 0 {
-		return errors.New("empty body"), nil
+		return nil, errors.New("empty body")
 	}
 
 	originalURL := string(body)
 	generatedURLCode, err := utils.RandomCode(urlLength)
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	db.Put(generatedURLCode, originalURL)
-	return nil, &generatedURLCode
+	return &generatedURLCode, nil
 }
 
 func buildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func buildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		err, code := saveUrl(db, body)
+		code, err := saveURL(db, body)
 
 		if err != nil {
 			handleBadRequest(w, &err)
