@@ -1,25 +1,25 @@
 package model
 
-type database struct {
+type Database struct {
 	results map[string]string
 }
 
-var db = &database{}
+func CreateDatabase() Database {
+	var database = &Database{}
+	database.results = make(map[string]string)
+	return *database
+}
 
-func Put(key string, value string) {
+func (db *Database) Put(key string, value string) {
 	if key == "" || value == "" {
 		return
-	}
-
-	if db.results == nil {
-		db.results = make(map[string]string)
 	}
 
 	db.results[key] = value
 }
 
-func Get(key string) (bool, string) {
-	if key == "" || db.results == nil {
+func (db *Database) Get(key string) (bool, string) {
+	if key == "" {
 		return false, ""
 	}
 
