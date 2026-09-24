@@ -2,6 +2,7 @@ package main
 
 import (
 	"m-drobynin/go-ext-url-shortener/internal/handler"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 )
 
@@ -14,7 +15,10 @@ func main() {
 }
 
 func run() error {
-	http.HandleFunc("/", handler.HandleShortenerRequest)
+	var database = model.CreateDatabase()
+	var shortenerHandler = handler.BuildShortenerHandler(&database)
+
+	http.HandleFunc("/", shortenerHandler)
 
 	return http.ListenAndServe(`:8080`, nil)
 }

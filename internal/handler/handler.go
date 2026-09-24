@@ -1,70 +1,26 @@
 package handler
 
 import (
-	"io"
 	"m-drobynin/go-ext-url-shortener/internal/model"
-	"m-drobynin/go-ext-url-shortener/internal/utils"
 	"net/http"
 )
 
-const urlLength = 10
+func BuildShortenerHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var saveHandler = buildSaveHandler(db)
+		var getHandler = buildGetHandler(db)
 
-func handleSave(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "text/plain" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		if r.Method == http.MethodPost {
+			saveHandler(w, r)
+			return
+		}
+
+		if r.Method == http.MethodGet {
+			getHandler(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("method is not supported"))
 	}
-
-	body, err := io.ReadAll(r.Body)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	originalURL := string(body)
-	generatedURLCode, err := utils.RandomCode(urlLength)
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	model.Put(generatedURLCode, originalURL)
-
-	w.WriteHeader(http.StatusCreated)
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("http://localhost:8080/" + generatedURLCode))
-}
-
-func handleGet(w http.ResponseWriter, r *http.Request) {
-	var urlCode = r.URL.Path
-
-	ok, res := model.Get(urlCode[1:])
-
-	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("not found"))
-		return
-	}
-
-	w.Header().Add("Location", res)
-	w.WriteHeader(http.StatusTemporaryRedirect)
-}
-
-func HandleShortenerRequest(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		handleSave(w, r)
-		return
-	}
-
-	if r.Method == http.MethodGet {
-		handleGet(w, r)
-		return
-	}
-
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	w.Write([]byte("method is not supported"))
 }
