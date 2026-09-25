@@ -10,17 +10,6 @@ import (
 
 const urlLength = 10
 
-func handleBadRequest(w http.ResponseWriter, err *error) {
-	w.WriteHeader(http.StatusBadRequest)
-
-	if err != nil {
-		var error = *err
-		w.Write([]byte(error.Error()))
-	} else {
-		w.Write([]byte("bad request"))
-	}
-}
-
 func handleCreatedResponse(w http.ResponseWriter, code string) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
@@ -43,7 +32,7 @@ func saveURL(db *model.Database, body []byte) (*string, error) {
 	return &generatedURLCode, nil
 }
 
-func buildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
 			handleBadRequest(w, nil)

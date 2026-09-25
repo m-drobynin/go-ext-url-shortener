@@ -5,12 +5,7 @@ import (
 	"net/http"
 )
 
-func handleNotFound(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte("not found"))
-}
-
-func buildGetHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildGetHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var urlCode = r.URL.Path
 
