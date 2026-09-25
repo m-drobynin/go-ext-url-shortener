@@ -25,7 +25,7 @@ func TestSaveHandler(t *testing.T) {
 	var existingURL = "existing_url"
 	database.Put("existing_key", existingURL)
 
-	var handler = buildSaveHandler(&database)
+	var handler = BuildSaveHandler(&database)
 
 	var plainContentType = "text/plain"
 	var emptyStr = ""
@@ -73,7 +73,6 @@ func TestSaveHandler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			// var bodyReader = tc.url == nil ? nil : strings.NewReader(tc.url)
 			var reader io.Reader = nil
 
 			if tc.url != nil {
@@ -91,8 +90,7 @@ func TestSaveHandler(t *testing.T) {
 			handler(w, r)
 
 			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
-
-			assert.True(t, strings.Contains(w.Body.String(), *tc.expectedBody), "Невалидный ответ")
+			assert.Regexp(t, *tc.expectedBody, w.Body.String(), "Невалидный ответ")
 		})
 	}
 }

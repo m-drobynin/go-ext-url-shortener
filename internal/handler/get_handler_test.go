@@ -23,7 +23,7 @@ func TestGetHandler(t *testing.T) {
 	var existingURL = "existing_url"
 	database.Put("existing_key", existingURL)
 
-	var handler = buildGetHandler(&database)
+	var handler = BuildGetHandler(&database)
 
 	var notFoundBody = "not found"
 
