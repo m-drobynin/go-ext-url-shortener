@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 )
 
-func BuildGetHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildGetHandler(config *config.AppConfig, db *model.Database) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var urlCode = r.URL.Path
 

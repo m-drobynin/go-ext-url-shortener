@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
@@ -21,18 +22,19 @@ type SaveTestCase struct {
 }
 
 func TestSaveHandler(t *testing.T) {
-	var database = model.CreateDatabase()
-	var existingURL = "existing_url"
+	database := model.CreateDatabase()
+	existingURL := "existing_url"
 	database.Put("existing_key", existingURL)
 
-	var handler = BuildSaveHandler(&database)
+	config := config.GetAppConfigDefaults()
+	handler := BuildSaveHandler(&config, &database)
 
-	var plainContentType = "text/plain"
-	var emptyStr = ""
-	var validURL = "http://example.com/path"
-	var emptyBodyMessage = "empty body"
-	var badRequestBodyMessage = "bad request"
-	var validBodyMessage = "localhost:8080"
+	plainContentType := "text/plain"
+	emptyStr := ""
+	validURL := "http://example.com/path"
+	emptyBodyMessage := "empty body"
+	badRequestBodyMessage := "bad request"
+	validBodyMessage := config.BaseURL
 
 	cases := []SaveTestCase{
 		{
