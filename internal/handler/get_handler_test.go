@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
@@ -19,32 +20,33 @@ type GetTestCase struct {
 }
 
 func TestGetHandler(t *testing.T) {
-	var database = model.CreateDatabase()
-	var existingURL = "existing_url"
+	database := model.CreateDatabase()
+	existingURL := "existing_url"
 	database.Put("existing_key", existingURL)
 
-	var handler = BuildGetHandler(&database)
+	config := config.GetAppConfigDefaults()
+	handler := BuildGetHandler(&config, &database)
 
 	var notFoundBody = "not found"
 
 	cases := []GetTestCase{
 		{
 			name: "empty url",
-			url:  "http://localhost:8080",
+			url:  config.BaseURL,
 
 			expectedCode: http.StatusNotFound,
 			expectedBody: &notFoundBody,
 		},
 		{
 			name: "non existing url",
-			url:  "http://localhost:8080/nope",
+			url:  config.BaseURL + "/nope",
 
 			expectedCode: http.StatusNotFound,
 			expectedBody: &notFoundBody,
 		},
 		{
 			name: "existing url",
-			url:  "http://localhost:8080/existing_key",
+			url:  config.BaseURL + "/existing_key",
 
 			expectedCode:           http.StatusTemporaryRedirect,
 			expectedLocationHeader: &existingURL,

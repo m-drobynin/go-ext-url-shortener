@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"io"
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
 	"net/http"
@@ -10,10 +11,10 @@ import (
 
 const urlLength = 10
 
-func handleCreatedResponse(w http.ResponseWriter, code string) {
+func handleCreatedResponse(config *config.AppConfig, w http.ResponseWriter, code string) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("http://localhost:8080/" + code))
+	w.Write([]byte(config.NetAddress.String() + "/" + code))
 }
 
 func saveURL(db *model.Database, body []byte) (*string, error) {
@@ -32,7 +33,7 @@ func saveURL(db *model.Database, body []byte) (*string, error) {
 	return &generatedURLCode, nil
 }
 
-func BuildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildSaveHandler(config *config.AppConfig, db *model.Database) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
 			handleBadRequest(w, nil)
@@ -53,6 +54,6 @@ func BuildSaveHandler(db *model.Database) func(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		handleCreatedResponse(w, *code)
+		handleCreatedResponse(config, w, *code)
 	}
 }

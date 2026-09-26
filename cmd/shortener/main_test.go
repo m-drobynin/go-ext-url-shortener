@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
@@ -38,13 +39,14 @@ func testRequest(t *testing.T, method,
 
 func TestRouterHappyRoute(t *testing.T) {
 	var database = model.CreateDatabase()
-	handler := buildRouter(&database)
+	config := config.GetAppConfigDefaults()
+	handler := prepareApplication(&config, &database)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
 	originalURL := "https://example.com"
-	localhost := "http://localhost:8080/"
+	localhost := config.NetAddress.String() + "/"
 
 	saveResponse, saveBody := testRequest(t, "POST", ts.URL+"/", &originalURL)
 
