@@ -20,7 +20,7 @@ type NetAddress struct {
 }
 
 func (address *NetAddress) String() string {
-	return fmt.Sprintf("%s:%d", address.Host, address.Port)
+	return fmt.Sprintf("http://%s:%d", address.Host, address.Port)
 }
 
 func (address *NetAddress) Set(flagValue string) error {
@@ -45,7 +45,7 @@ func (config *AppConfig) String() string {
 }
 
 func GetAppConfigDefaults() AppConfig {
-	localhost := "http://localhost"
+	localhost := "localhost"
 
 	return AppConfig{
 		Version: "0.0.0",
@@ -53,7 +53,7 @@ func GetAppConfigDefaults() AppConfig {
 			Host: localhost,
 			Port: 8080,
 		},
-		BaseURL: localhost,
+		BaseURL: "http://" + localhost,
 	}
 }
 
