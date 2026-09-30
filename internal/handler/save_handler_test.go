@@ -20,21 +20,21 @@ type SaveTestCase struct {
 	expectedBody *string
 }
 
-type TestSaveUrlServiceImpl struct {
+type TestSaveURLServiceImpl struct {
 }
 
-func (service *TestSaveUrlServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *TestSaveURLServiceImpl) SaveURL(originalURL string) (*string, error) {
 	res := "save url temp"
 	return &res, nil
 }
 
-func (service *TestSaveUrlServiceImpl) RetrieveURL(code string) (*string, error) {
+func (service *TestSaveURLServiceImpl) RetrieveURL(code string) (*string, error) {
 	return nil, nil
 }
 
 func TestSaveHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
-	service := &TestSaveUrlServiceImpl{}
+	service := &TestSaveURLServiceImpl{}
 
 	handler := BuildSaveHandler(&config, service)
 

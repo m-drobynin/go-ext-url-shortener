@@ -20,10 +20,10 @@ func handleCreatedResponse(config SaveHandlerConfig, w http.ResponseWriter, code
 	w.Write([]byte(config.GetBaseURL() + "/" + code))
 }
 
-func BuildSaveHandler(config SaveHandlerConfig, service service.UrlService) func(w http.ResponseWriter, r *http.Request) {
+func BuildSaveHandler(config SaveHandlerConfig, service service.URLService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
-			handleError(w, &model.BadRequestError)
+			handleError(w, &model.ErrBadRequest)
 			return
 		}
 
@@ -35,7 +35,7 @@ func BuildSaveHandler(config SaveHandlerConfig, service service.UrlService) func
 		}
 
 		if len(body) == 0 {
-			handleError(w, &model.BadRequestError)
+			handleError(w, &model.ErrBadRequest)
 			return
 		}
 

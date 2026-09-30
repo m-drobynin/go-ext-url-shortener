@@ -21,13 +21,13 @@ func main() {
 func run() error {
 	config := config.GetAppConfig()
 	database := model.NewDatabase()
-	service := service.NewUrlServiceImpl(database)
+	service := service.NewURLServiceImpl(database)
 	handler := prepareApplication(&config, service)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
 }
 
-func prepareApplication(config *config.AppConfig, service service.UrlService) chi.Router {
+func prepareApplication(config *config.AppConfig, service service.URLService) chi.Router {
 	r := chi.NewRouter()
 
 	var saveHandler = handler.BuildSaveHandler(config, service)

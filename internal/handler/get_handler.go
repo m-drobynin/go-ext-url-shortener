@@ -8,12 +8,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func BuildGetHandler(service service.UrlService) func(w http.ResponseWriter, r *http.Request) {
+func BuildGetHandler(service service.URLService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var urlCode = chi.URLParam(r, "urlCode")
 
 		if len(urlCode) == 0 {
-			handleError(w, &model.BadRequestError)
+			handleError(w, &model.ErrBadRequest)
 			return
 		}
 

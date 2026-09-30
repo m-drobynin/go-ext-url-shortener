@@ -22,7 +22,7 @@ func (db *Database) TryPut(key string, value string) error {
 	_, ok := db.results[key]
 
 	if ok {
-		return DbConflictError
+		return ErrDBConflict
 	}
 
 	db.results[key] = value
@@ -39,5 +39,5 @@ func (db *Database) Get(key string) (*string, error) {
 		return &res, nil
 	}
 
-	return nil, DbNotFoundError
+	return nil, ErrDBNotFound
 }

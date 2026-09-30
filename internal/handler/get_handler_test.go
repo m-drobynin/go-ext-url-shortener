@@ -22,23 +22,23 @@ type GetTestCase struct {
 
 var existingURL = "existing_url"
 
-type TestGetUrlServiceImpl struct {
+type TestGetURLServiceImpl struct {
 }
 
-func (service *TestGetUrlServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *TestGetURLServiceImpl) SaveURL(originalURL string) (*string, error) {
 	return nil, nil
 }
 
-func (service *TestGetUrlServiceImpl) RetrieveURL(code string) (*string, error) {
+func (service *TestGetURLServiceImpl) RetrieveURL(code string) (*string, error) {
 	if code == "existing_key" {
 		return &existingURL, nil
 	}
 
-	return nil, model.DbNotFoundError
+	return nil, model.ErrDBNotFound
 }
 
 func TestGetHandler(t *testing.T) {
-	service := &TestGetUrlServiceImpl{}
+	service := &TestGetURLServiceImpl{}
 
 	handler := BuildGetHandler(service)
 

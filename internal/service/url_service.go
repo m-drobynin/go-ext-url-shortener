@@ -8,22 +8,22 @@ import (
 const urlLength = 10
 const maxSaveAttempts = 10
 
-type UrlService interface {
+type URLService interface {
 	SaveURL(originalURL string) (*string, error)
 	RetrieveURL(code string) (*string, error)
 }
 
-type UrlServiceImpl struct {
+type URLServiceImpl struct {
 	db *model.Database
 }
 
-func NewUrlServiceImpl(db *model.Database) *UrlServiceImpl {
-	service := &UrlServiceImpl{}
+func NewURLServiceImpl(db *model.Database) *URLServiceImpl {
+	service := &URLServiceImpl{}
 	service.db = db
 	return service
 }
 
-func (service *UrlServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
 	i := 0
 
 	for i < maxSaveAttempts {
@@ -41,9 +41,9 @@ func (service *UrlServiceImpl) SaveURL(originalURL string) (*string, error) {
 		}
 	}
 
-	return nil, model.InternalError
+	return nil, model.ErrInternal
 }
 
-func (service *UrlServiceImpl) RetrieveURL(code string) (*string, error) {
+func (service *URLServiceImpl) RetrieveURL(code string) (*string, error) {
 	return service.db.Get(code)
 }

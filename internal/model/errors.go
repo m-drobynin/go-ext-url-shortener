@@ -2,8 +2,8 @@ package model
 
 import "errors"
 
-var DbConflictError = errors.New("conflict")
-var DbNotFoundError = errors.New("not found")
+var ErrDBConflict = errors.New("conflict")
+var ErrDBNotFound = errors.New("not found")
 
-var BadRequestError = errors.New("bad request")
-var InternalError = errors.New("internal error")
+var ErrBadRequest = errors.New("bad request")
+var ErrInternal = errors.New("internal error")
