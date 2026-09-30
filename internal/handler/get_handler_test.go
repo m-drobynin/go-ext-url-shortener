@@ -1,52 +1,68 @@
 package handler
 
 import (
-	"m-drobynin/go-ext-url-shortener/internal/config"
+	"context"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
 type GetTestCase struct {
 	name string
-	url  string
+	path string
 
 	expectedCode           int
 	expectedBody           *string
 	expectedLocationHeader *string
 }
 
+var existingURL = "existing_url"
+
+type TestGetUrlServiceImpl struct {
+}
+
+func (service *TestGetUrlServiceImpl) SaveURL(originalURL string) (*string, error) {
+	return nil, nil
+}
+
+func (service *TestGetUrlServiceImpl) RetrieveURL(code string) (*string, error) {
+	if code == "existing_key" {
+		return &existingURL, nil
+	}
+
+	return nil, model.DbNotFoundError
+}
+
 func TestGetHandler(t *testing.T) {
-	database := model.CreateDatabase()
-	existingURL := "existing_url"
-	database.Put("existing_key", existingURL)
+	service := &TestGetUrlServiceImpl{}
 
-	config := config.GetAppConfigDefaults()
-	handler := BuildGetHandler(&config, &database)
+	handler := BuildGetHandler(service)
 
-	var notFoundBody = "not found"
+	var notFoundBody = http.StatusText(http.StatusNotFound)
+	var badRequestBody = http.StatusText(http.StatusBadRequest)
 
 	cases := []GetTestCase{
 		{
 			name: "empty url",
-			url:  config.BaseURL,
+			path: "",
 
-			expectedCode: http.StatusNotFound,
-			expectedBody: &notFoundBody,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: &badRequestBody,
 		},
 		{
 			name: "non existing url",
-			url:  config.BaseURL + "/nope",
+			path: "nope",
 
 			expectedCode: http.StatusNotFound,
 			expectedBody: &notFoundBody,
 		},
 		{
 			name: "existing url",
-			url:  config.BaseURL + "/existing_key",
+			path: "existing_key",
 
 			expectedCode:           http.StatusTemporaryRedirect,
 			expectedLocationHeader: &existingURL,
@@ -55,8 +71,12 @@ func TestGetHandler(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, tc.url, nil)
+			r := httptest.NewRequest(http.MethodGet, "http://localhost/"+tc.path, nil)
 			w := httptest.NewRecorder()
+
+			routeCtx := chi.NewRouteContext()
+			routeCtx.URLParams.Add("urlCode", tc.path)
+			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, routeCtx))
 
 			handler(w, r)
 

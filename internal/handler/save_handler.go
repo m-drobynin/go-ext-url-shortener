@@ -1,56 +1,48 @@
 package handler
 
 import (
-	"errors"
 	"io"
-	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
-	"m-drobynin/go-ext-url-shortener/internal/utils"
+	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 )
 
 const urlLength = 10
+const maxSaveAttempts = 10
 
-func handleCreatedResponse(config *config.AppConfig, w http.ResponseWriter, code string) {
-	w.WriteHeader(http.StatusCreated)
+type SaveHandlerConfig interface {
+	GetBaseURL() string
+}
+
+func handleCreatedResponse(config SaveHandlerConfig, w http.ResponseWriter, code string) {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(config.NetAddress.String() + "/" + code))
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(config.GetBaseURL() + "/" + code))
 }
 
-func saveURL(db *model.Database, body []byte) (*string, error) {
-	if len(body) == 0 {
-		return nil, errors.New("empty body")
-	}
-
-	originalURL := string(body)
-	generatedURLCode, err := utils.RandomCode(urlLength)
-
-	if err != nil {
-		return nil, err
-	}
-
-	db.Put(generatedURLCode, originalURL)
-	return &generatedURLCode, nil
-}
-
-func BuildSaveHandler(config *config.AppConfig, db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildSaveHandler(config SaveHandlerConfig, service service.UrlService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
-			handleBadRequest(w, nil)
+			handleError(w, &model.BadRequestError)
 			return
 		}
 
 		body, err := io.ReadAll(r.Body)
 
 		if err != nil {
-			handleBadRequest(w, &err)
+			handleError(w, &err)
 			return
 		}
 
-		code, err := saveURL(db, body)
+		if len(body) == 0 {
+			handleError(w, &model.BadRequestError)
+			return
+		}
+
+		code, err := service.SaveURL(string(body))
 
 		if err != nil {
-			handleBadRequest(w, &err)
+			handleError(w, &err)
 			return
 		}
 

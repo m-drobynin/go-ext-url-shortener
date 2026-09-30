@@ -3,7 +3,6 @@ package handler
 import (
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
-	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,19 +20,28 @@ type SaveTestCase struct {
 	expectedBody *string
 }
 
-func TestSaveHandler(t *testing.T) {
-	database := model.CreateDatabase()
-	existingURL := "existing_url"
-	database.Put("existing_key", existingURL)
+type TestSaveUrlServiceImpl struct {
+}
 
+func (service *TestSaveUrlServiceImpl) SaveURL(originalURL string) (*string, error) {
+	res := "save url temp"
+	return &res, nil
+}
+
+func (service *TestSaveUrlServiceImpl) RetrieveURL(code string) (*string, error) {
+	return nil, nil
+}
+
+func TestSaveHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
-	handler := BuildSaveHandler(&config, &database)
+	service := &TestSaveUrlServiceImpl{}
+
+	handler := BuildSaveHandler(&config, service)
 
 	plainContentType := "text/plain"
 	emptyStr := ""
 	validURL := "http://example.com/path"
-	emptyBodyMessage := "empty body"
-	badRequestBodyMessage := "bad request"
+	badRequestBody := http.StatusText(http.StatusBadRequest)
 	validBodyMessage := config.BaseURL
 
 	cases := []SaveTestCase{
@@ -44,7 +52,7 @@ func TestSaveHandler(t *testing.T) {
 			contentType: &plainContentType,
 
 			expectedCode: http.StatusBadRequest,
-			expectedBody: &emptyBodyMessage,
+			expectedBody: &badRequestBody,
 		},
 		{
 			name: "empty url",
@@ -53,7 +61,7 @@ func TestSaveHandler(t *testing.T) {
 			contentType: &plainContentType,
 
 			expectedCode: http.StatusBadRequest,
-			expectedBody: &emptyBodyMessage,
+			expectedBody: &badRequestBody,
 		},
 		{
 			name: "invalid header",
@@ -61,7 +69,7 @@ func TestSaveHandler(t *testing.T) {
 			url: &validURL,
 
 			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBodyMessage,
+			expectedBody: &badRequestBody,
 		},
 		{
 			name:        "valid request",

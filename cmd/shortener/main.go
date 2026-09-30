@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/handler"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,25 +14,24 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }
 
 func run() error {
 	config := config.GetAppConfig()
-	database := model.CreateDatabase()
-	handler := prepareApplication(&config, &database)
-
-	fmt.Println(&config)
+	database := model.NewDatabase()
+	service := service.NewUrlServiceImpl(database)
+	handler := prepareApplication(&config, service)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
 }
 
-func prepareApplication(config *config.AppConfig, database *model.Database) chi.Router {
+func prepareApplication(config *config.AppConfig, service service.UrlService) chi.Router {
 	r := chi.NewRouter()
 
-	var saveHandler = handler.BuildSaveHandler(config, database)
-	var getHandler = handler.BuildGetHandler(config, database)
+	var saveHandler = handler.BuildSaveHandler(config, service)
+	var getHandler = handler.BuildGetHandler(service)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)

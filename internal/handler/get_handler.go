@@ -1,28 +1,30 @@
 package handler
 
 import (
-	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
-func BuildGetHandler(config *config.AppConfig, db *model.Database) func(w http.ResponseWriter, r *http.Request) {
+func BuildGetHandler(service service.UrlService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var urlCode = r.URL.Path
+		var urlCode = chi.URLParam(r, "urlCode")
 
-		if len(r.URL.Path) < 2 {
-			handleNotFound(w)
+		if len(urlCode) == 0 {
+			handleError(w, &model.BadRequestError)
 			return
 		}
 
-		ok, res := db.Get(urlCode[1:])
+		res, err := service.RetrieveURL(urlCode)
 
-		if !ok {
-			handleNotFound(w)
+		if err != nil {
+			handleError(w, &err)
 			return
 		}
 
-		w.Header().Add("Location", res)
+		w.Header().Add("Location", *res)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }

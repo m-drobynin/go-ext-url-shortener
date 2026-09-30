@@ -44,6 +44,10 @@ func (config *AppConfig) String() string {
 	return fmt.Sprintf("Version: %s, address: %s:%d", config.Version, config.NetAddress.Host, config.NetAddress.Port)
 }
 
+func (config *AppConfig) GetBaseURL() string {
+	return config.BaseURL
+}
+
 func GetAppConfigDefaults() AppConfig {
 	localhost := "localhost"
 

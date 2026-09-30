@@ -1,33 +1,43 @@
 package model
 
+import (
+	"sync"
+)
+
 type Database struct {
+	mu      sync.Mutex
 	results map[string]string
 }
 
-func CreateDatabase() Database {
+func NewDatabase() *Database {
 	var database = &Database{}
 	database.results = make(map[string]string)
-	return *database
+	return database
 }
 
-func (db *Database) Put(key string, value string) {
-	if key == "" || value == "" {
-		return
+func (db *Database) TryPut(key string, value string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	_, ok := db.results[key]
+
+	if ok {
+		return DbConflictError
 	}
 
 	db.results[key] = value
+	return nil
 }
 
-func (db *Database) Get(key string) (bool, string) {
-	if key == "" {
-		return false, ""
-	}
+func (db *Database) Get(key string) (*string, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
 	res, ok := db.results[key]
 
 	if ok {
-		return true, res
+		return &res, nil
 	}
 
-	return false, ""
+	return nil, DbNotFoundError
 }
