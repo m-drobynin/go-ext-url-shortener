@@ -45,7 +45,7 @@ func (config *AppConfig) String() string {
 }
 
 func (config *AppConfig) GetBaseURL() string {
-	return config.BaseURL
+	return config.NetAddress.String()
 }
 
 func GetAppConfigDefaults() AppConfig {

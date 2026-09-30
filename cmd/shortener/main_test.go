@@ -49,7 +49,7 @@ func TestRouterHappyRoute(t *testing.T) {
 	defer ts.Close()
 
 	originalURL := "https://example.com"
-	localhost := config.BaseURL + "/"
+	localhost := config.GetBaseURL() + "/"
 
 	saveResponse, saveBody := testRequest(t, "POST", ts.URL+"/", &originalURL)
 
