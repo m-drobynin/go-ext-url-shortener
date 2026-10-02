@@ -1,7 +1,6 @@
 package service
 
 import (
-	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
 )
 
@@ -14,10 +13,10 @@ type URLService interface {
 }
 
 type URLServiceImpl struct {
-	db *model.Database
+	db DbProvider
 }
 
-func NewURLServiceImpl(db *model.Database) *URLServiceImpl {
+func NewURLServiceImpl(db DbProvider) *URLServiceImpl {
 	service := &URLServiceImpl{}
 	service.db = db
 	return service
@@ -41,7 +40,7 @@ func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
 		}
 	}
 
-	return nil, model.ErrInternal
+	return nil, ErrSaveUrlMaxAttempts
 }
 
 func (service *URLServiceImpl) RetrieveURL(code string) (*string, error) {
