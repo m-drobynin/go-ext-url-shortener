@@ -13,10 +13,10 @@ type URLService interface {
 }
 
 type URLServiceImpl struct {
-	db DbProvider
+	db DBProvider
 }
 
-func NewURLServiceImpl(db DbProvider) *URLServiceImpl {
+func NewURLServiceImpl(db DBProvider) *URLServiceImpl {
 	service := &URLServiceImpl{}
 	service.db = db
 	return service
@@ -40,7 +40,7 @@ func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
 		}
 	}
 
-	return nil, ErrSaveUrlMaxAttempts
+	return nil, ErrSaveURLMaxAttempts
 }
 
 func (service *URLServiceImpl) RetrieveURL(code string) (*string, error) {

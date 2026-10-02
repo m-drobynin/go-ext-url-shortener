@@ -4,4 +4,4 @@ import (
 	"errors"
 )
 
-var ErrSaveUrlMaxAttempts = errors.New("max url save retries reached")
+var ErrSaveURLMaxAttempts = errors.New("max url save retries reached")

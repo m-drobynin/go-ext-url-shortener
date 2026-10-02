@@ -1,6 +1,6 @@
 package service
 
-type DbProvider interface {
+type DBProvider interface {
 	TryPut(key string, value string) error
 	Get(key string) (*string, error)
 }
