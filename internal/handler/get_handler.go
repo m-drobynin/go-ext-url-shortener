@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 
@@ -12,7 +13,7 @@ func BuildGetHandler(service service.URLService) func(w http.ResponseWriter, r *
 		var urlCode = chi.URLParam(r, "urlCode")
 
 		if len(urlCode) == 0 {
-			handleError(w, ErrBadRequest)
+			handleError(w, fmt.Errorf("code is empty: %w", ErrBadRequest))
 			return
 		}
 
