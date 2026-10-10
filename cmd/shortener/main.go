@@ -19,10 +19,15 @@ func main() {
 }
 
 func run() error {
-	config := config.GetAppConfig()
+	config, err := config.GetAppConfig()
+
+	if err != nil {
+		return err
+	}
+
 	database := model.NewDatabase()
 	service := service.NewURLServiceImpl(database)
-	handler := prepareApplication(&config, service)
+	handler := prepareApplication(config, service)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
 }

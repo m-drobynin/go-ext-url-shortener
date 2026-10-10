@@ -4,49 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
+
+	"github.com/caarlos0/env/v6"
 )
-
-type AppConfig struct {
-	Version    string
-	NetAddress NetAddress
-	BaseURL    string
-}
-
-type NetAddress struct {
-	Host string
-	Port int
-}
-
-func (address *NetAddress) String() string {
-	return fmt.Sprintf("http://%s:%d", address.Host, address.Port)
-}
-
-func (address *NetAddress) Set(flagValue string) error {
-	parts := strings.Split(flagValue, ":")
-	address.Host = parts[0]
-
-	if len(parts) == 2 {
-		port, err := strconv.Atoi(parts[1])
-
-		if err != nil {
-			return err
-		}
-
-		address.Port = port
-	}
-
-	return nil
-}
-
-func (config *AppConfig) String() string {
-	return fmt.Sprintf("Version: %s, address: %s:%d", config.Version, config.NetAddress.Host, config.NetAddress.Port)
-}
-
-func (config *AppConfig) GetBaseURL() string {
-	return config.NetAddress.String()
-}
 
 func GetAppConfigDefaults() AppConfig {
 	localhost := "localhost"
@@ -61,7 +21,7 @@ func GetAppConfigDefaults() AppConfig {
 	}
 }
 
-func GetAppConfig() AppConfig {
+func GetAppConfig() (*AppConfig, error) {
 	config := GetAppConfigDefaults()
 
 	flag.Usage = func() {
@@ -73,5 +33,19 @@ func GetAppConfig() AppConfig {
 	flag.StringVar(&config.BaseURL, "b", config.BaseURL, "base shortener url")
 	flag.Parse()
 
-	return config
+	var envConfig EnvConfig
+	err := env.Parse(&envConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// override with env values if exists
+	err = config.SetFromEnv(envConfig)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
 }
