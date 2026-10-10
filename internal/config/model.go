@@ -19,7 +19,7 @@ type NetAddress struct {
 
 type EnvConfig struct {
 	ServerAddress string `env:"SERVER_ADDRESS"`
-	BaseUrl       string `env:"BASE_URL"`
+	BaseURL       string `env:"BASE_URL"`
 }
 
 func (address *NetAddress) String() string {
@@ -52,8 +52,8 @@ func (config *AppConfig) GetBaseURL() string {
 }
 
 func (config *AppConfig) SetFromEnv(envConfig EnvConfig) error {
-	if envConfig.BaseUrl != "" {
-		config.BaseURL = envConfig.BaseUrl
+	if envConfig.BaseURL != "" {
+		config.BaseURL = envConfig.BaseURL
 	}
 
 	if envConfig.ServerAddress != "" {
