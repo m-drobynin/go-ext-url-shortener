@@ -5,6 +5,7 @@ import (
 	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/handler"
+	"m-drobynin/go-ext-url-shortener/internal/logger"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
@@ -25,6 +26,10 @@ func run() error {
 		return err
 	}
 
+	if err = logger.Initialize("info"); err != nil {
+		return err
+	}
+
 	database := model.NewDatabase()
 	service := service.NewURLServiceImpl(database)
 	handler := prepareApplication(config, service)
@@ -35,8 +40,8 @@ func run() error {
 func prepareApplication(config *config.AppConfig, service service.URLService) chi.Router {
 	r := chi.NewRouter()
 
-	var saveHandler = handler.BuildSaveHandler(config, service)
-	var getHandler = handler.BuildGetHandler(service)
+	var saveHandler = logger.WithLogging(handler.BuildSaveHandler(config, service))
+	var getHandler = logger.WithLogging(handler.BuildGetHandler(service))
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)
