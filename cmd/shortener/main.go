@@ -42,9 +42,11 @@ func prepareApplication(config *config.AppConfig, service service.URLService) ch
 
 	var saveHandler = logger.WithLogging(handler.BuildSaveHandler(config, service))
 	var getHandler = logger.WithLogging(handler.BuildGetHandler(service))
+	var shortenHandler = logger.WithLogging(handler.BuildShortenHandler(config, service))
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)
+	r.Post("/api/shorten", shortenHandler)
 
 	return r
 }
