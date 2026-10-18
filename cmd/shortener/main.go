@@ -8,6 +8,7 @@ import (
 	"m-drobynin/go-ext-url-shortener/internal/logger"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
+	"m-drobynin/go-ext-url-shortener/internal/utils"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -37,12 +38,16 @@ func run() error {
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
 }
 
+func applyMiddleware(h http.HandlerFunc) http.HandlerFunc {
+	return logger.WithLogging(utils.WithGzip(h))
+}
+
 func prepareApplication(config *config.AppConfig, service service.URLService) chi.Router {
 	r := chi.NewRouter()
 
-	var saveHandler = logger.WithLogging(handler.BuildSaveHandler(config, service))
-	var getHandler = logger.WithLogging(handler.BuildGetHandler(service))
-	var shortenHandler = logger.WithLogging(handler.BuildShortenHandler(config, service))
+	var saveHandler = applyMiddleware(handler.BuildSaveHandler(config, service))
+	var getHandler = applyMiddleware(handler.BuildGetHandler(service))
+	var shortenHandler = applyMiddleware(handler.BuildShortenHandler(config, service))
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)
