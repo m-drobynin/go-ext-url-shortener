@@ -8,19 +8,19 @@ import (
 
 type FileStorage struct {
 	filename string
-	rows     []ShortenedUrlRow
+	rows     []ShortenedURLRow
 }
 
-type ShortenedUrlRow struct {
+type ShortenedURLRow struct {
 	UUID        string `json:"uuid"`
-	ShortUrl    string `json:"short_url"`
-	OriginalUrl string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
 	fs := FileStorage{
 		filename: filename,
-		rows:     []ShortenedUrlRow{},
+		rows:     []ShortenedURLRow{},
 	}
 
 	if err := fs.read(); err != nil {
@@ -31,9 +31,9 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 }
 
 func (fs *FileStorage) TryPut(key string, value string) error {
-	newRow := ShortenedUrlRow{
-		ShortUrl:    key,
-		OriginalUrl: value,
+	newRow := ShortenedURLRow{
+		ShortURL:    key,
+		OriginalURL: value,
 		UUID:        uuid.NewV4().String(),
 	}
 
@@ -44,8 +44,8 @@ func (fs *FileStorage) TryPut(key string, value string) error {
 
 func (fs *FileStorage) Get(key string) (*string, error) {
 	for _, v := range fs.rows {
-		if v.ShortUrl == key {
-			return &v.OriginalUrl, nil
+		if v.ShortURL == key {
+			return &v.OriginalURL, nil
 		}
 	}
 
