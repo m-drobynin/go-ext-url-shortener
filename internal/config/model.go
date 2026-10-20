@@ -7,9 +7,10 @@ import (
 )
 
 type AppConfig struct {
-	Version    string
-	NetAddress NetAddress
-	BaseURL    string
+	Version         string
+	NetAddress      NetAddress
+	BaseURL         string
+	FileStoragePath string
 }
 
 type NetAddress struct {
@@ -18,8 +19,9 @@ type NetAddress struct {
 }
 
 type EnvConfig struct {
-	ServerAddress string `env:"SERVER_ADDRESS"`
-	BaseURL       string `env:"BASE_URL"`
+	ServerAddress   string `env:"SERVER_ADDRESS"`
+	BaseURL         string `env:"BASE_URL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
 }
 
 func (address *NetAddress) String() string {
@@ -62,6 +64,10 @@ func (config *AppConfig) SetFromEnv(envConfig EnvConfig) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if envConfig.FileStoragePath != "" {
+		config.FileStoragePath = envConfig.FileStoragePath
 	}
 
 	return nil

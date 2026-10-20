@@ -17,7 +17,8 @@ func GetAppConfigDefaults() AppConfig {
 			Host: localhost,
 			Port: 8080,
 		},
-		BaseURL: "http://" + localhost,
+		BaseURL:         "http://" + localhost,
+		FileStoragePath: "./file_storage.json",
 	}
 }
 
@@ -31,6 +32,7 @@ func GetAppConfig() (*AppConfig, error) {
 
 	flag.Var(&config.NetAddress, "a", "Net address host:port")
 	flag.StringVar(&config.BaseURL, "b", config.BaseURL, "base shortener url")
+	flag.StringVar(&config.BaseURL, "f", config.FileStoragePath, "file storage path")
 	flag.Parse()
 
 	var envConfig EnvConfig
