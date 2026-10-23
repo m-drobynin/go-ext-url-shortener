@@ -14,7 +14,8 @@ func TestGetAppConfig(t *testing.T) {
 			Host: "localhost",
 			Port: 1234,
 		},
-		BaseURL: "http://localhost:1234",
+		BaseURL:         "http://localhost:1234",
+		FileStoragePath: "./cmd_path.json",
 	}
 
 	cases := []struct {
@@ -32,8 +33,9 @@ func TestGetAppConfig(t *testing.T) {
 		{
 			name: "with env only",
 			envArgs: map[string]string{
-				"SERVER_ADDRESS": "localhost:1234",
-				"BASE_URL":       "http://localhost:1234",
+				"SERVER_ADDRESS":    "localhost:1234",
+				"BASE_URL":          "http://localhost:1234",
+				"FILE_STORAGE_PATH": "./path.json",
 			},
 			cmdArgs:        map[string]string{},
 			expectedConfig: expectedConfig,
@@ -44,18 +46,21 @@ func TestGetAppConfig(t *testing.T) {
 			cmdArgs: map[string]string{
 				"-a": "localhost:1234",
 				"-b": "http://localhost:1234",
+				"-f": "./path.json",
 			},
 			expectedConfig: expectedConfig,
 		},
 		{
 			name: "with env and cmd",
 			envArgs: map[string]string{
-				"SERVER_ADDRESS": "localhost:1234",
-				"BASE_URL":       "http://localhost:1234",
+				"SERVER_ADDRESS":    "localhost:1234",
+				"BASE_URL":          "http://localhost:1234",
+				"FILE_STORAGE_PATH": "./path.json",
 			},
 			cmdArgs: map[string]string{
 				"-a": "localhost:4321",
 				"-b": "http://localhost:4321",
+				"-f": "./cmd_path.json",
 			},
 			expectedConfig: expectedConfig,
 		},

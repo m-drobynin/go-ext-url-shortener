@@ -31,8 +31,14 @@ func run() error {
 		return err
 	}
 
-	database := model.NewDatabase()
-	service := service.NewURLServiceImpl(database)
+	// database := model.NewDatabase()
+	fileStorage, err := model.NewFileStorage(config.FileStoragePath)
+
+	if err != nil {
+		return err
+	}
+
+	service := service.NewURLServiceImpl(fileStorage)
 	handler := prepareApplication(config, service)
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
