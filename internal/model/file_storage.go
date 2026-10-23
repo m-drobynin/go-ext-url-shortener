@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bufio"
 	"encoding/json"
 	"os"
 	"uuid"
@@ -9,6 +10,8 @@ import (
 type FileStorage struct {
 	filename string
 	rows     []ShortenedURLRow
+	file     *os.File
+	scanner  *bufio.Scanner
 }
 
 type ShortenedURLRow struct {
@@ -18,9 +21,17 @@ type ShortenedURLRow struct {
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
+
+	if err != nil {
+		return nil, err
+	}
+
 	fs := FileStorage{
 		filename: filename,
+		file:     file,
 		rows:     []ShortenedURLRow{},
+		scanner:  bufio.NewScanner(file),
 	}
 
 	if err := fs.read(); err != nil {
@@ -63,11 +74,11 @@ func (fs *FileStorage) save() error {
 }
 
 func (fs *FileStorage) read() error {
-	data, err := os.ReadFile(fs.filename)
-
-	if err != nil {
-		return err
+	if !fs.scanner.Scan() {
+		return fs.scanner.Err()
 	}
+
+	data := fs.scanner.Bytes()
 
 	if err := json.Unmarshal(data, &fs.rows); err != nil {
 		return err
