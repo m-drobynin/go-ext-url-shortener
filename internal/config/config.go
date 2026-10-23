@@ -32,7 +32,7 @@ func GetAppConfig() (*AppConfig, error) {
 
 	flag.Var(&config.NetAddress, "a", "Net address host:port")
 	flag.StringVar(&config.BaseURL, "b", config.BaseURL, "base shortener url")
-	flag.StringVar(&config.BaseURL, "f", config.FileStoragePath, "file storage path")
+	flag.StringVar(&config.FileStoragePath, "f", config.FileStoragePath, "file storage path")
 	flag.Parse()
 
 	var envConfig EnvConfig
