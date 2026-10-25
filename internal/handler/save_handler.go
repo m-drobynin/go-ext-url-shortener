@@ -24,7 +24,8 @@ func BuildSaveHandler(config SaveHandlerConfig, service service.URLService) func
 			return
 		}
 
-		body, err := io.ReadAll(r.Body)
+		bodyReader := http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		body, err := io.ReadAll(bodyReader)
 
 		if err != nil {
 			handleError(w, fmt.Errorf("error while reading body: %v: %w", err, ErrInternal))

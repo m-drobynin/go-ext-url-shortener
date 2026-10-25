@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
+	"m-drobynin/go-ext-url-shortener/internal/logger"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
@@ -42,8 +43,9 @@ func TestRouterHappyRoute(t *testing.T) {
 	database := model.NewDatabase()
 	service := service.NewURLServiceImpl(database)
 	config := config.GetAppConfigDefaults()
+	log, _ := logger.NewLogger("info")
 
-	handler := prepareApplication(&config, service)
+	handler := prepareApplication(&config, service, log)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

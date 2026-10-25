@@ -4,24 +4,17 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
-	"uuid"
 )
 
 type FileStorage struct {
 	filename string
-	rows     []ShortenedURLRow
 	file     *os.File
 	scanner  *bufio.Scanner
-}
-
-type ShortenedURLRow struct {
-	UUID        string `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	db       *Database
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 
 	if err != nil {
 		return nil, err
@@ -30,8 +23,8 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	fs := FileStorage{
 		filename: filename,
 		file:     file,
-		rows:     []ShortenedURLRow{},
 		scanner:  bufio.NewScanner(file),
+		db:       NewDatabase(),
 	}
 
 	if err := fs.read(); err != nil {
@@ -42,29 +35,15 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 }
 
 func (fs *FileStorage) TryPut(key string, value string) error {
-	newRow := ShortenedURLRow{
-		ShortURL:    key,
-		OriginalURL: value,
-		UUID:        uuid.NewV4().String(),
+	err := fs.db.TryPut(key, value)
+
+	if err != nil {
+		return err
 	}
 
-	fs.rows = append(fs.rows, newRow)
+	row := fs.db.rows[len(fs.db.rows)-1]
 
-	return fs.save()
-}
-
-func (fs *FileStorage) Get(key string) (*string, error) {
-	for _, v := range fs.rows {
-		if v.ShortURL == key {
-			return &v.OriginalURL, nil
-		}
-	}
-
-	return nil, nil
-}
-
-func (fs *FileStorage) save() error {
-	data, err := json.Marshal(fs.rows)
+	data, err := json.Marshal(row)
 
 	if err != nil {
 		return err
@@ -73,15 +52,20 @@ func (fs *FileStorage) save() error {
 	return os.WriteFile(fs.filename, data, 0666)
 }
 
+func (fs *FileStorage) Get(key string) (*string, error) {
+	return fs.db.Get(key)
+}
+
 func (fs *FileStorage) read() error {
-	if !fs.scanner.Scan() {
-		return fs.scanner.Err()
-	}
+	for res := fs.scanner.Scan(); res; {
+		data := fs.scanner.Bytes()
+		row := ShortenedURLRow{}
 
-	data := fs.scanner.Bytes()
+		if err := json.Unmarshal(data, &row); err != nil {
+			return err
+		}
 
-	if err := json.Unmarshal(data, &fs.rows); err != nil {
-		return err
+		fs.db.rows = append(fs.db.rows, row)
 	}
 
 	return nil

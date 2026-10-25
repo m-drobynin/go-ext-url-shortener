@@ -4,23 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 )
-
-type ShortenRequest struct {
-	URL string `json:"url"`
-}
-
-type ShortenResponse struct {
-	Result string `json:"result"`
-}
 
 func handleCreatedJSONResponse(config SaveHandlerConfig, w http.ResponseWriter, code string) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	var response = ShortenResponse{
+	var response = model.ShortenResponse{
 		Result: config.GetBaseURL() + "/" + code,
 	}
 
@@ -41,7 +34,8 @@ func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) f
 			return
 		}
 
-		body, err := io.ReadAll(r.Body)
+		bodyReader := http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		body, err := io.ReadAll(bodyReader)
 
 		if err != nil {
 			handleError(w, fmt.Errorf("error while reading body: %v: %w", err, ErrInternal))
@@ -53,7 +47,7 @@ func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) f
 			return
 		}
 
-		var request ShortenRequest
+		var request model.ShortenRequest
 
 		if err = json.Unmarshal(body, &request); err != nil {
 			handleError(w, fmt.Errorf("error while unmarshalling: %v: %w", err, ErrInternal))
@@ -80,23 +74,3 @@ func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) f
 		}
 	}
 }
-
-// Добавьте в код сервера новый эндпоинт POST /api/shorten, который будет принимать в теле запроса JSON-объект {"url":"<some_url>"} и возвращать в ответ объект {"result":"<short_url>"}.
-// Запрос может иметь такой вид:
-
-// POST http://localhost:8080/api/shorten HTTP/1.1
-// Host: localhost:8080
-// Content-Type: application/json
-// {
-//   "url": "https://practicum.yandex.ru"
-// }
-// Ответ может быть таким:
-
-// HTTP/1.1 201 OK
-// Content-Type: application/json
-// Content-Length: 30
-// {
-//  "result": "http://localhost:8080/EwHXdJfB"
-// }
-// Удостоверьтесь, что в ответе от сервера присутствует HTTP-заголовок Content-Type со значением application/json. Он указывает клиенту, в каком формате передано тело ответа.
-// Также не забудьте добавить тесты на новый эндпоинт, как и на предыдущие.

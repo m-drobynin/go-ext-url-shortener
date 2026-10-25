@@ -1,4 +1,4 @@
-package utils
+package middleware
 
 import (
 	"compress/gzip"
@@ -17,14 +17,14 @@ var supportedContentTypes = []string{
 }
 
 type compressWriter struct {
-	w  http.ResponseWriter
-	zw *gzip.Writer
+	w           http.ResponseWriter
+	zw          *gzip.Writer
+	wroteHeader bool
 }
 
 func newCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
-		w:  w,
-		zw: gzip.NewWriter(w),
+		w: w,
 	}
 }
 
@@ -33,18 +33,39 @@ func (c *compressWriter) Header() http.Header {
 }
 
 func (c *compressWriter) Write(p []byte) (int, error) {
-	return c.zw.Write(p)
+	if !c.wroteHeader {
+		c.WriteHeader(http.StatusOK)
+	}
+
+	if c.zw != nil {
+		return c.zw.Write(p)
+	}
+
+	return c.w.Write(p)
 }
 
 func (c *compressWriter) WriteHeader(statusCode int) {
-	if statusCode < 300 {
-		c.w.Header().Set("Content-Encoding", "gzip")
+	if c.wroteHeader {
+		return
 	}
+	c.wroteHeader = true
+
+	contentType := c.Header().Get("Content-Type")
+
+	if statusCode < 300 && checkSupportsContentType(contentType) {
+		c.Header().Set("Content-Encoding", "gzip")
+		c.Header().Del("Content-Length")
+		c.zw = gzip.NewWriter(c.w)
+	}
+
 	c.w.WriteHeader(statusCode)
 }
 
 func (c *compressWriter) Close() error {
-	return c.zw.Close()
+	if c.zw != nil {
+		return c.zw.Close()
+	}
+	return nil
 }
 
 type compressReader struct {
@@ -85,23 +106,20 @@ func checkSendsGzip(r *http.Request) bool {
 	return strings.Contains(contentEncoding, "gzip")
 }
 
-func checkSupportsContentType(r *http.Request) bool {
-	contentType := r.Header.Get("Content-Type")
-
-	for _, c := range supportedContentTypes {
-		if strings.Contains(contentType, c) {
+func checkSupportsContentType(contentType string) bool {
+	for _, supported := range supportedContentTypes {
+		if strings.Contains(contentType, supported) {
 			return true
 		}
 	}
-
 	return false
 }
 
-func WithGzip(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func WithGzip(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
 
-		if checkSupportsGzip(r) && checkSupportsContentType(r) {
+		if checkSupportsGzip(r) {
 			cw := newCompressWriter(w)
 			ow = cw
 			defer cw.Close()
@@ -118,5 +136,5 @@ func WithGzip(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		h.ServeHTTP(ow, r)
-	}
+	})
 }
