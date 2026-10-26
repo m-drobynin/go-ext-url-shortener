@@ -26,3 +26,4 @@ vendor/
 # storage
 
 file_storage.json
+*.fs_test.json

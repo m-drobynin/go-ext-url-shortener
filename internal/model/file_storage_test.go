@@ -8,7 +8,7 @@ import (
 )
 
 func TestFileStorage(t *testing.T) {
-	fs, err := NewFileStorage(filepath.Join(t.TempDir(), "test.json"))
+	fs, err := NewFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
 
 	assert.NoError(t, err, "error while creating a db")
 
@@ -22,6 +22,9 @@ func TestFileStorage(t *testing.T) {
 	fs.TryPut(key1, value1)
 	fs.TryPut(key2, value2)
 	fs.TryPut(key3, value3)
+
+	err = fs.read()
+	assert.NoError(t, err, "should not return an reading error")
 
 	res1, err := fs.Get(key1)
 	assert.NoError(t, err, "error while getting value 1")
@@ -41,6 +44,5 @@ func TestFileStorage(t *testing.T) {
 	assert.Nil(t, noval, "should return nil value if key does not exist")
 
 	err = fs.TryPut(key1, "smth")
-
 	assert.Error(t, err, "should return an error for putting an existing key")
 }

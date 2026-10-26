@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"uuid"
 )
 
 type FileStorage struct {
@@ -13,8 +14,14 @@ type FileStorage struct {
 	db       *Database
 }
 
+type ShortenedURLRow struct {
+	UUID        string `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
 func NewFileStorage(filename string) (*FileStorage, error) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
 
 	if err != nil {
 		return nil, err
@@ -41,7 +48,11 @@ func (fs *FileStorage) TryPut(key string, value string) error {
 		return err
 	}
 
-	row := fs.db.rows[len(fs.db.rows)-1]
+	row := ShortenedURLRow{
+		ShortURL:    key,
+		OriginalURL: value,
+		UUID:        uuid.NewV4().String(),
+	}
 
 	data, err := json.Marshal(row)
 
@@ -49,7 +60,15 @@ func (fs *FileStorage) TryPut(key string, value string) error {
 		return err
 	}
 
-	return os.WriteFile(fs.filename, data, 0666)
+	if _, err = fs.file.Write(data); err != nil {
+		return err
+	}
+
+	if _, err = fs.file.WriteString("\n"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (fs *FileStorage) Get(key string) (*string, error) {
@@ -57,7 +76,7 @@ func (fs *FileStorage) Get(key string) (*string, error) {
 }
 
 func (fs *FileStorage) read() error {
-	for res := fs.scanner.Scan(); res; {
+	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
 		row := ShortenedURLRow{}
 
@@ -65,8 +84,8 @@ func (fs *FileStorage) read() error {
 			return err
 		}
 
-		fs.db.rows = append(fs.db.rows, row)
+		fs.db.rowsMap[row.ShortURL] = row.OriginalURL
 	}
 
-	return nil
+	return fs.scanner.Err()
 }
