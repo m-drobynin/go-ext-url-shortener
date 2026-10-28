@@ -24,7 +24,7 @@ type TestSaveURLServiceImpl struct {
 }
 
 func (service *TestSaveURLServiceImpl) SaveURL(originalURL string) (*string, error) {
-	res := "save url temp"
+	res := "urlcodetest"
 	return &res, nil
 }
 
