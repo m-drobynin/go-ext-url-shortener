@@ -37,7 +37,7 @@ func BuildSaveHandler(config SaveHandlerConfig, service service.URLService) func
 			return
 		}
 
-		code, err := service.SaveURL(string(body))
+		code, err := service.SaveURL(r.Context(), string(body))
 
 		if err != nil {
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))

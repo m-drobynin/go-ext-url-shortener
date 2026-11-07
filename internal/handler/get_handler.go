@@ -17,7 +17,7 @@ func BuildGetHandler(service service.URLService) func(w http.ResponseWriter, r *
 			return
 		}
 
-		res, err := service.RetrieveURL(urlCode)
+		res, err := service.RetrieveURL(r.Context(), urlCode)
 
 		if err != nil {
 			handleError(w, err)

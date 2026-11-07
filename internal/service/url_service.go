@@ -1,28 +1,35 @@
 package service
 
 import (
+	"context"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
+
+	"go.uber.org/zap"
 )
 
 const urlLength = 10
 const maxSaveAttempts = 10
 
 type URLService interface {
-	SaveURL(originalURL string) (*string, error)
-	RetrieveURL(code string) (*string, error)
+	SaveURL(ctx context.Context, originalURL string) (*string, error)
+	RetrieveURL(ctx context.Context, code string) (*string, error)
 }
 
 type URLServiceImpl struct {
-	db DBProvider
+	log *zap.Logger
+	db  DBProvider
 }
 
-func NewURLServiceImpl(db DBProvider) *URLServiceImpl {
-	service := &URLServiceImpl{}
-	service.db = db
+func NewURLServiceImpl(db DBProvider, log *zap.Logger) *URLServiceImpl {
+	service := &URLServiceImpl{
+		db:  db,
+		log: log,
+	}
+
 	return service
 }
 
-func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *URLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
 	i := 0
 
 	for i < maxSaveAttempts {
@@ -33,7 +40,7 @@ func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
 			return nil, err
 		}
 
-		err = service.db.TryPut(generatedURLCode, originalURL)
+		err = service.db.TryPut(ctx, generatedURLCode, originalURL)
 
 		if err == nil {
 			return &generatedURLCode, nil
@@ -43,6 +50,6 @@ func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
 	return nil, ErrSaveURLMaxAttempts
 }
 
-func (service *URLServiceImpl) RetrieveURL(code string) (*string, error) {
-	return service.db.Get(code)
+func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
+	return service.db.Get(ctx, code)
 }

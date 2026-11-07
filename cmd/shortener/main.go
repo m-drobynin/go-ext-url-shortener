@@ -53,25 +53,40 @@ func run() error {
 		return err
 	}
 
-	// database := model.NewDatabase()
-	fileStorage, err := model.NewFileStorage(config.FileStoragePath)
+	var db *sql.DB
+
+	if config.DatabaseDSN != "" {
+		db, err = sql.Open("pgx", config.DatabaseDSN)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	storage, err := prepareStorage(config, db)
 
 	if err != nil {
 		return err
 	}
 
-	db, err := sql.Open("pgx", config.DatabaseDSN)
-
-	if err != nil {
-		return err
-	}
-
-	service := service.NewURLServiceImpl(fileStorage)
+	service := service.NewURLServiceImpl(storage, log)
 	router := prepareApplication(config, service, log)
 
 	router.Get("/ping", BuildPingHandler(db))
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
+}
+
+func prepareStorage(config *config.AppConfig, db *sql.DB) (service.DBProvider, error) {
+	if db != nil {
+		return model.NewPostgresDB(db, config.DatabaseDSN)
+	}
+
+	if config.FileStoragePath != "" {
+		return model.NewFileStorage(config.FileStoragePath)
+	}
+
+	return model.NewMemoryDatabase(), nil
 }
 
 func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {

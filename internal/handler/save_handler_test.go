@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"net/http"
@@ -23,12 +24,12 @@ type SaveTestCase struct {
 type TestSaveURLServiceImpl struct {
 }
 
-func (service *TestSaveURLServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *TestSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
 	res := "urlcodetest"
 	return &res, nil
 }
 
-func (service *TestSaveURLServiceImpl) RetrieveURL(code string) (*string, error) {
+func (service *TestSaveURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
 	return nil, nil
 }
 

@@ -59,7 +59,7 @@ func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) f
 			return
 		}
 
-		code, err := service.SaveURL(request.URL)
+		code, err := service.SaveURL(r.Context(), request.URL)
 
 		if err != nil {
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))

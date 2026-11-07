@@ -25,11 +25,11 @@ var existingURL = "existing_url"
 type TestGetURLServiceImpl struct {
 }
 
-func (service *TestGetURLServiceImpl) SaveURL(originalURL string) (*string, error) {
+func (service *TestGetURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
 	return nil, nil
 }
 
-func (service *TestGetURLServiceImpl) RetrieveURL(code string) (*string, error) {
+func (service *TestGetURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
 	if code == "existing_key" {
 		return &existingURL, nil
 	}
