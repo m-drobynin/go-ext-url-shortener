@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
@@ -15,6 +16,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
@@ -53,25 +57,56 @@ func run() error {
 		return err
 	}
 
-	// database := model.NewDatabase()
-	fileStorage, err := model.NewFileStorage(config.FileStoragePath)
+	var db *sql.DB
+
+	if config.DatabaseDSN != "" {
+		db, err = sql.Open("pgx", config.DatabaseDSN)
+
+		if err != nil {
+			return err
+		}
+
+		driver, err := postgres.WithInstance(db, &postgres.Config{})
+
+		if err != nil {
+			return err
+		}
+
+		m, err := migrate.NewWithDatabaseInstance("file://migrations", "pgx", driver)
+
+		if err != nil {
+			return err
+		}
+
+		if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			return fmt.Errorf("apply migrations: %w", err)
+		}
+	}
+
+	storage, err := prepareStorage(config, db)
 
 	if err != nil {
 		return err
 	}
 
-	db, err := sql.Open("pgx", config.DatabaseDSN)
-
-	if err != nil {
-		return err
-	}
-
-	service := service.NewURLServiceImpl(fileStorage)
+	service := service.NewURLServiceImpl(storage, log)
 	router := prepareApplication(config, service, log)
 
 	router.Get("/ping", BuildPingHandler(db))
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
+}
+
+func prepareStorage(config *config.AppConfig, db *sql.DB) (service.DBProvider, error) {
+	if db != nil {
+		return model.NewPostgresDB(db, config.DatabaseDSN)
+	}
+
+	if config.FileStoragePath != "" {
+		return model.NewFileStorage(config.FileStoragePath)
+	}
+
+	return model.NewMemoryDatabase(), nil
 }
 
 func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {

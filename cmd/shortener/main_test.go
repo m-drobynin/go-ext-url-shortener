@@ -40,10 +40,10 @@ func testRequest(t *testing.T, method,
 }
 
 func TestRouterHappyRoute(t *testing.T) {
-	database := model.NewDatabase()
-	service := service.NewURLServiceImpl(database)
-	config := config.GetAppConfigDefaults()
+	database := model.NewMemoryDatabase()
 	log, _ := logger.NewLogger("info")
+	service := service.NewURLServiceImpl(database, log)
+	config := config.GetAppConfigDefaults()
 
 	handler := prepareApplication(&config, service, log)
 

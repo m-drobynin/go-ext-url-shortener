@@ -2,6 +2,7 @@ package model
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"os"
 	"uuid"
@@ -11,13 +12,7 @@ type FileStorage struct {
 	filename string
 	file     *os.File
 	scanner  *bufio.Scanner
-	db       *Database
-}
-
-type ShortenedURLRow struct {
-	UUID        string `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	db       *MemoryDatabase
 }
 
 func NewFileStorage(filename string) (*FileStorage, error) {
@@ -31,7 +26,7 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 		filename: filename,
 		file:     file,
 		scanner:  bufio.NewScanner(file),
-		db:       NewDatabase(),
+		db:       NewMemoryDatabase(),
 	}
 
 	if err := fs.read(); err != nil {
@@ -41,8 +36,8 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	return &fs, nil
 }
 
-func (fs *FileStorage) TryPut(key string, value string) error {
-	err := fs.db.TryPut(key, value)
+func (fs *FileStorage) TryPut(ctx context.Context, key string, value string) error {
+	err := fs.db.TryPut(ctx, key, value)
 
 	if err != nil {
 		return err
@@ -71,8 +66,8 @@ func (fs *FileStorage) TryPut(key string, value string) error {
 	return nil
 }
 
-func (fs *FileStorage) Get(key string) (*string, error) {
-	return fs.db.Get(key)
+func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
+	return fs.db.Get(ctx, key)
 }
 
 func (fs *FileStorage) read() error {

@@ -17,10 +17,7 @@ func GetAppConfigDefaults() AppConfig {
 			Host: localhost,
 			Port: 8080,
 		},
-		BaseURL:         "http://" + localhost,
-		FileStoragePath: "./file_storage.json",
-		DatabaseDSN: fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-			`localhost`, `mdrobynin`, ``, `mdrobynin`),
+		BaseURL: "http://" + localhost,
 	}
 }
 

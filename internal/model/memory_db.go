@@ -1,23 +1,24 @@
 package model
 
 import (
+	"context"
 	"sync"
 )
 
-type Database struct {
+type MemoryDatabase struct {
 	mu      sync.Mutex
 	rowsMap map[string]string
 }
 
-func NewDatabase() *Database {
-	var database = &Database{
+func NewMemoryDatabase() *MemoryDatabase {
+	var database = &MemoryDatabase{
 		rowsMap: make(map[string]string),
 	}
 
 	return database
 }
 
-func (db *Database) TryPut(key string, value string) error {
+func (db *MemoryDatabase) TryPut(ctx context.Context, key string, value string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -32,7 +33,7 @@ func (db *Database) TryPut(key string, value string) error {
 	return nil
 }
 
-func (db *Database) Get(key string) (*string, error) {
+func (db *MemoryDatabase) Get(ctx context.Context, key string) (*string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

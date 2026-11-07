@@ -9,6 +9,7 @@ import (
 )
 
 func TestGetAppConfig(t *testing.T) {
+	localhost := "localhost"
 	expectedConfig := AppConfig{
 		NetAddress: NetAddress{
 			Host: "localhost",
@@ -26,10 +27,18 @@ func TestGetAppConfig(t *testing.T) {
 		expectedConfig AppConfig
 	}{
 		{
-			name:           "no env or cmd",
-			envArgs:        map[string]string{},
-			cmdArgs:        map[string]string{},
-			expectedConfig: GetAppConfigDefaults(),
+			name:    "no env or cmd",
+			envArgs: map[string]string{},
+			cmdArgs: map[string]string{},
+			expectedConfig: AppConfig{
+				NetAddress: NetAddress{
+					Host: localhost,
+					Port: 8080,
+				},
+				BaseURL:         "http://" + localhost,
+				FileStoragePath: "",
+				DatabaseDSN:     "",
+			},
 		},
 		{
 			name: "with env only",

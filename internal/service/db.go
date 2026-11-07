@@ -1,6 +1,8 @@
 package service
 
+import "context"
+
 type DBProvider interface {
-	TryPut(key string, value string) error
-	Get(key string) (*string, error)
+	TryPut(ctx context.Context, key string, value string) error
+	Get(ctx context.Context, key string) (*string, error)
 }
