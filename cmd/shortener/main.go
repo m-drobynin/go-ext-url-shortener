@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
@@ -10,14 +12,31 @@ import (
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func BuildPingHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		err := db.PingContext(ctx)
+
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
 	}
 }
 
@@ -41,10 +60,18 @@ func run() error {
 		return err
 	}
 
-	service := service.NewURLServiceImpl(fileStorage)
-	handler := prepareApplication(config, service, log)
+	db, err := sql.Open("pgx", config.DatabaseDSN)
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), handler)
+	if err != nil {
+		return err
+	}
+
+	service := service.NewURLServiceImpl(fileStorage)
+	router := prepareApplication(config, service, log)
+
+	router.Get("/ping", BuildPingHandler(db))
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
 }
 
 func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {

@@ -15,7 +15,8 @@ func TestGetAppConfig(t *testing.T) {
 			Port: 1234,
 		},
 		BaseURL:         "http://localhost:1234",
-		FileStoragePath: "./cmd_path.json",
+		FileStoragePath: "./path.json",
+		DatabaseDSN:     "database_connection_string",
 	}
 
 	cases := []struct {
@@ -36,6 +37,7 @@ func TestGetAppConfig(t *testing.T) {
 				"SERVER_ADDRESS":    "localhost:1234",
 				"BASE_URL":          "http://localhost:1234",
 				"FILE_STORAGE_PATH": "./path.json",
+				"DATABASE_DSN":      "database_connection_string",
 			},
 			cmdArgs:        map[string]string{},
 			expectedConfig: expectedConfig,
@@ -47,6 +49,7 @@ func TestGetAppConfig(t *testing.T) {
 				"-a": "localhost:1234",
 				"-b": "http://localhost:1234",
 				"-f": "./path.json",
+				"-d": "database_connection_string",
 			},
 			expectedConfig: expectedConfig,
 		},
@@ -56,11 +59,13 @@ func TestGetAppConfig(t *testing.T) {
 				"SERVER_ADDRESS":    "localhost:1234",
 				"BASE_URL":          "http://localhost:1234",
 				"FILE_STORAGE_PATH": "./path.json",
+				"DATABASE_DSN":      "database_connection_string",
 			},
 			cmdArgs: map[string]string{
 				"-a": "localhost:4321",
 				"-b": "http://localhost:4321",
 				"-f": "./cmd_path.json",
+				"-d": "another_database_connection_string",
 			},
 			expectedConfig: expectedConfig,
 		},
@@ -89,6 +94,9 @@ func TestGetAppConfig(t *testing.T) {
 			}
 
 			res, err := GetAppConfig()
+
+			assert.Equal(t, tc.expectedConfig.FileStoragePath, res.FileStoragePath, "File storage paths does not match")
+			assert.Equal(t, tc.expectedConfig.DatabaseDSN, res.DatabaseDSN, "DB conntection strings does not match")
 
 			assert.NoError(t, err)
 			tcNetAddr := tc.expectedConfig.NetAddress
