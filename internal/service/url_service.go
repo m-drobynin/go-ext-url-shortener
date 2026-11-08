@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
 
 	"go.uber.org/zap"
 )
 
-const urlLength = 10
+const codeLength = 10
 const maxSaveAttempts = 10
 
 type URLService interface {
 	SaveURL(ctx context.Context, originalURL string) (*string, error)
+	SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error)
 	RetrieveURL(ctx context.Context, code string) (*string, error)
 }
 
@@ -30,26 +32,64 @@ func NewURLServiceImpl(db DBProvider, log *zap.Logger) *URLServiceImpl {
 }
 
 func (service *URLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
-	i := 0
+	generatedURLCode, err := service.getNextRandomCode(ctx)
 
-	for i < maxSaveAttempts {
-		i++
-		generatedURLCode, err := utils.RandomCode(urlLength)
+	if err != nil {
+		return nil, err
+	}
+
+	err = service.db.Put(ctx, *generatedURLCode, originalURL)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return generatedURLCode, nil
+}
+
+func (service *URLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
+	var results []model.ValuesPair
+
+	for _, url := range urls {
+		code, err := service.getNextRandomCode(ctx)
 
 		if err != nil {
 			return nil, err
 		}
 
-		err = service.db.TryPut(ctx, generatedURLCode, originalURL)
+		results = append(results, model.ValuesPair{
+			Key:   *code,
+			Value: url,
+		})
+	}
 
-		if err == nil {
+	err := service.db.PutBatch(ctx, results)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &results, nil
+}
+
+func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
+	return service.db.Get(ctx, code)
+}
+
+func (service *URLServiceImpl) getNextRandomCode(ctx context.Context) (*string, error) {
+	for i := 0; i < maxSaveAttempts; i++ {
+		generatedURLCode, err := utils.RandomCode(codeLength)
+
+		if err != nil {
+			return nil, err
+		}
+
+		res, _ := service.db.Get(ctx, generatedURLCode)
+
+		if res == nil {
 			return &generatedURLCode, nil
 		}
 	}
 
 	return nil, ErrSaveURLMaxAttempts
-}
-
-func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
-	return service.db.Get(ctx, code)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,6 +28,10 @@ type TestSaveURLServiceImpl struct {
 func (service *TestSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
 	res := "urlcodetest"
 	return &res, nil
+}
+
+func (service *TestSaveURLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
+	return nil, nil
 }
 
 func (service *TestSaveURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {

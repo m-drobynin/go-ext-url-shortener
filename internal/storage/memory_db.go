@@ -1,7 +1,8 @@
-package model
+package storage
 
 import (
 	"context"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"sync"
 )
 
@@ -18,17 +19,29 @@ func NewMemoryDatabase() *MemoryDatabase {
 	return database
 }
 
-func (db *MemoryDatabase) TryPut(ctx context.Context, key string, value string) error {
+func (db *MemoryDatabase) Put(ctx context.Context, key string, value string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	_, ok := db.rowsMap[key]
 
 	if ok {
-		return ErrDBConflict
+		return model.ErrDBConflict
 	}
 
 	db.rowsMap[key] = value
+
+	return nil
+}
+
+func (db *MemoryDatabase) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+	for _, pair := range pairs {
+		err := db.Put(ctx, pair.Key, pair.Value)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -43,5 +56,5 @@ func (db *MemoryDatabase) Get(ctx context.Context, key string) (*string, error) 
 		return &res, nil
 	}
 
-	return nil, ErrDBNotFound
+	return nil, model.ErrDBNotFound
 }

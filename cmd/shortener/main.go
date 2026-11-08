@@ -3,23 +3,19 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/handler"
 	"m-drobynin/go-ext-url-shortener/internal/logger"
 	"m-drobynin/go-ext-url-shortener/internal/middleware"
-	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/repository"
 	"m-drobynin/go-ext-url-shortener/internal/service"
+	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -60,26 +56,10 @@ func run() error {
 	var db *sql.DB
 
 	if config.DatabaseDSN != "" {
-		db, err = sql.Open("pgx", config.DatabaseDSN)
+		db, err = repository.PreprareDBConnection(config.DatabaseDSN)
 
 		if err != nil {
 			return err
-		}
-
-		driver, err := postgres.WithInstance(db, &postgres.Config{})
-
-		if err != nil {
-			return err
-		}
-
-		m, err := migrate.NewWithDatabaseInstance("file://migrations", "pgx", driver)
-
-		if err != nil {
-			return err
-		}
-
-		if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-			return fmt.Errorf("apply migrations: %w", err)
 		}
 	}
 
@@ -92,21 +72,23 @@ func run() error {
 	service := service.NewURLServiceImpl(storage, log)
 	router := prepareApplication(config, service, log)
 
-	router.Get("/ping", BuildPingHandler(db))
+	if db != nil {
+		router.Get("/ping", BuildPingHandler(db))
+	}
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
 }
 
 func prepareStorage(config *config.AppConfig, db *sql.DB) (service.DBProvider, error) {
 	if db != nil {
-		return model.NewPostgresDB(db, config.DatabaseDSN)
+		return storage.NewPostgresDB(db, config.DatabaseDSN)
 	}
 
 	if config.FileStoragePath != "" {
-		return model.NewFileStorage(config.FileStoragePath)
+		return storage.NewFileStorage(config.FileStoragePath)
 	}
 
-	return model.NewMemoryDatabase(), nil
+	return storage.NewMemoryDatabase(), nil
 }
 
 func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {
@@ -117,10 +99,12 @@ func prepareApplication(config *config.AppConfig, service service.URLService, lo
 	var saveHandler = handler.BuildSaveHandler(config, service)
 	var getHandler = handler.BuildGetHandler(service)
 	var shortenHandler = handler.BuildShortenHandler(config, service)
+	var batchShortenHandler = handler.BuildBatchShortenHandler(config, service)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)
 	r.Post("/api/shorten", shortenHandler)
+	r.Post("/api/shorten/batch", batchShortenHandler)
 
 	return r
 }

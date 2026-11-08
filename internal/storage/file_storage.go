@@ -1,9 +1,10 @@
-package model
+package storage
 
 import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"os"
 	"uuid"
 )
@@ -36,14 +37,14 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	return &fs, nil
 }
 
-func (fs *FileStorage) TryPut(ctx context.Context, key string, value string) error {
-	err := fs.db.TryPut(ctx, key, value)
+func (fs *FileStorage) Put(ctx context.Context, key string, value string) error {
+	err := fs.db.Put(ctx, key, value)
 
 	if err != nil {
 		return err
 	}
 
-	row := ShortenedURLRow{
+	row := model.ShortenedURLRow{
 		ShortURL:    key,
 		OriginalURL: value,
 		UUID:        uuid.NewV4().String(),
@@ -66,6 +67,18 @@ func (fs *FileStorage) TryPut(ctx context.Context, key string, value string) err
 	return nil
 }
 
+func (fs *FileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+	for _, pair := range pairs {
+		err := fs.Put(ctx, pair.Key, pair.Value)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
 	return fs.db.Get(ctx, key)
 }
@@ -73,7 +86,7 @@ func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
 func (fs *FileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
-		row := ShortenedURLRow{}
+		row := model.ShortenedURLRow{}
 
 		if err := json.Unmarshal(data, &row); err != nil {
 			return err
