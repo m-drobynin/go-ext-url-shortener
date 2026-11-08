@@ -56,7 +56,7 @@ func run() error {
 	var db *sql.DB
 
 	if config.DatabaseDSN != "" {
-		db, err = repository.PreprareDbConnection(config.DatabaseDSN)
+		db, err = repository.PreprareDBConnection(config.DatabaseDSN)
 
 		if err != nil {
 			return err

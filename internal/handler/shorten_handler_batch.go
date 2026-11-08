@@ -26,7 +26,7 @@ func handleBatchCreatedJSONResponse(w http.ResponseWriter, rows []model.ShortenB
 
 func saveBatch(ctx context.Context, config SaveHandlerConfig, service service.URLService, request []model.ShortenBatchRequestRow) (*[]model.ShortenBatchResponseRow, error) {
 	var requestMap = make(map[string]string)
-	var urls = make([]string, len(request))
+	var urls []string
 
 	for _, pair := range request {
 		requestMap[pair.OriginalURL] = pair.CorrelationID

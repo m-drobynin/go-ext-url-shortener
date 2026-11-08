@@ -106,8 +106,8 @@ func TestBatchShortenHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var reader io.Reader = nil
 
-			reqJsonBytes, _ := json.Marshal(tc.rows)
-			reader = bytes.NewReader(reqJsonBytes)
+			reqJSONBytes, _ := json.Marshal(tc.rows)
+			reader = bytes.NewReader(reqJSONBytes)
 
 			r := httptest.NewRequest(http.MethodPost, "/", reader)
 
