@@ -29,6 +29,10 @@ func (service *TestGetURLServiceImpl) SaveURL(ctx context.Context, originalURL s
 	return nil, nil
 }
 
+func (service *TestGetURLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
+	return nil, nil
+}
+
 func (service *TestGetURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
 	if code == "existing_key" {
 		return &existingURL, nil

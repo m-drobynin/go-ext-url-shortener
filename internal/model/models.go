@@ -5,3 +5,8 @@ type ShortenedURLRow struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
+
+type ValuesPair struct {
+	Key   string
+	Value string
+}
