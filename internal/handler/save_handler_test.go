@@ -5,6 +5,7 @@ import (
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,6 +13,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+var existingURL = "http://existing.com/url"
+var existingURLCode = "existing_code"
 
 type SaveTestCase struct {
 	name        string
@@ -25,8 +29,13 @@ type SaveTestCase struct {
 type TestSaveURLServiceImpl struct {
 }
 
-func (service *TestSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
+func (urlService *TestSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
 	res := "urlcodetest"
+
+	if originalURL == existingURL {
+		return nil, service.ErrUniqueValue
+	}
+
 	return &res, nil
 }
 
@@ -39,6 +48,10 @@ func (service *TestSaveURLServiceImpl) RetrieveURL(ctx context.Context, code str
 }
 
 func (service *TestSaveURLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	if originalURL == existingURL {
+		return &existingURLCode, nil
+	}
+
 	return nil, nil
 }
 
@@ -87,6 +100,14 @@ func TestSaveHandler(t *testing.T) {
 			contentType: &plainContentType,
 
 			expectedCode: http.StatusCreated,
+			expectedBody: &validBodyMessage,
+		},
+		{
+			name:        "conflict",
+			url:         &existingURL,
+			contentType: &plainContentType,
+
+			expectedCode: http.StatusConflict,
 			expectedBody: &validBodyMessage,
 		},
 	}

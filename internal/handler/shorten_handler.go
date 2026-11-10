@@ -30,7 +30,7 @@ func handleCreatedJSONResponse(config SaveHandlerConfig, w http.ResponseWriter, 
 
 func handleConflictJSONResponse(config SaveHandlerConfig, w http.ResponseWriter, code string) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusConflict)
 
 	var response = model.ShortenResponse{
 		Result: config.GetBaseURL() + "/" + code,
@@ -82,7 +82,7 @@ func BuildShortenHandler(config SaveHandlerConfig, urlService service.URLService
 
 		if err != nil {
 			if errors.Is(err, service.ErrUniqueValue) {
-				code, err = urlService.RetrieveURL(r.Context(), request.URL)
+				code, err = urlService.RetrieveCode(r.Context(), request.URL)
 
 				if err != nil {
 					handleError(w, fmt.Errorf("error while searching for url code: %v: %w", err, ErrInternal))

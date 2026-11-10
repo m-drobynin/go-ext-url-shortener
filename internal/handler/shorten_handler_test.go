@@ -22,6 +22,7 @@ func TestShortenHandler(t *testing.T) {
 	validURL := "http://example.com/path"
 	badRequestBody := http.StatusText(http.StatusBadRequest)
 	validBodyMessage := `{"result":"` + config.GetBaseURL() + `/urlcodetest"}`
+	existingURLBodyMessage := `{"result":"` + config.GetBaseURL() + `/` + existingURLCode + `"}`
 
 	cases := []SaveTestCase{
 		{
@@ -57,6 +58,14 @@ func TestShortenHandler(t *testing.T) {
 
 			expectedCode: http.StatusCreated,
 			expectedBody: &validBodyMessage,
+		},
+		{
+			name:        "valid request",
+			url:         &existingURL,
+			contentType: &jsonContentType,
+
+			expectedCode: http.StatusConflict,
+			expectedBody: &existingURLBodyMessage,
 		},
 	}
 

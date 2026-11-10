@@ -20,8 +20,6 @@ type GetTestCase struct {
 	expectedLocationHeader *string
 }
 
-var existingURL = "existing_url"
-
 type TestGetURLServiceImpl struct {
 }
 
