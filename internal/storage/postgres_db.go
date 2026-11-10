@@ -91,5 +91,5 @@ func (psDb *PostgresDB) GetCode(ctx context.Context, originalURL string) (*strin
 		return nil, err
 	}
 
-	return &urlRow.OriginalURL, nil
+	return &urlRow.ShortURL, nil
 }
