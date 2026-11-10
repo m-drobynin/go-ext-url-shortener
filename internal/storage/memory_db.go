@@ -9,13 +9,13 @@ import (
 type MemoryDatabase struct {
 	mu            sync.Mutex
 	rowsMap       map[string]string
-	reverseUrlMap map[string]string
+	reverseURLMap map[string]string
 }
 
 func NewMemoryDatabase() *MemoryDatabase {
 	var database = &MemoryDatabase{
 		rowsMap:       make(map[string]string),
-		reverseUrlMap: make(map[string]string),
+		reverseURLMap: make(map[string]string),
 	}
 
 	return database
@@ -31,14 +31,14 @@ func (db *MemoryDatabase) Put(ctx context.Context, key string, value string) err
 		return model.ErrDBConflict
 	}
 
-	_, ok = db.reverseUrlMap[value]
+	_, ok = db.reverseURLMap[value]
 
 	if ok {
 		return model.ErrDBConflict
 	}
 
 	db.rowsMap[key] = value
-	db.reverseUrlMap[value] = key
+	db.reverseURLMap[value] = key
 
 	return nil
 }
@@ -72,7 +72,7 @@ func (db *MemoryDatabase) GetCode(ctx context.Context, originalURL string) (*str
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	res, ok := db.reverseUrlMap[originalURL]
+	res, ok := db.reverseURLMap[originalURL]
 
 	if ok {
 		return &res, nil

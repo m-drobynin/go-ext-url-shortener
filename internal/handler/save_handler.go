@@ -44,12 +44,12 @@ func BuildSaveHandler(config SaveHandlerConfig, urlService service.URLService) f
 			return
 		}
 
-		originalUrl := string(body)
-		code, err := urlService.SaveURL(r.Context(), originalUrl)
+		originalURL := string(body)
+		code, err := urlService.SaveURL(r.Context(), originalURL)
 
 		if err != nil {
 			if errors.Is(err, service.ErrUniqueValue) {
-				code, err = urlService.RetrieveCode(r.Context(), originalUrl)
+				code, err = urlService.RetrieveCode(r.Context(), originalURL)
 
 				if err != nil {
 					handleError(w, fmt.Errorf("error while searching for url code: %v: %w", err, ErrInternal))
