@@ -1,95 +1,120 @@
 package handler
 
 import (
-	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
+	"m-drobynin/go-ext-url-shortener/internal/service"
+	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestShortenHandler(t *testing.T) {
+func prepareShortenRequest(originalURL string) *http.Request {
+	reqBody := `{"url":"` + originalURL + `"}`
+	return httptest.NewRequest(http.MethodPost, "/", strings.NewReader(reqBody))
+}
+
+func prepareShortenResponse(config config.AppConfig, code string) string {
+	return `{"result":"` + config.GetBaseURL() + `/` + code + `"}`
+}
+
+func TestShortenHandlerEmptyUrl(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
+
 	config := config.GetAppConfigDefaults()
-	service := &TestSaveURLServiceImpl{}
 
 	handler := BuildShortenHandler(&config, service)
 
-	jsonContentType := "application/json"
-	emptyStr := ""
-	validURL := "http://example.com/path"
-	badRequestBody := http.StatusText(http.StatusBadRequest)
-	validBodyMessage := `{"result":"` + config.GetBaseURL() + `/urlcodetest"}`
-	existingURLBodyMessage := `{"result":"` + config.GetBaseURL() + `/` + existingURLCode + `"}`
+	plainContentType := "text/plain"
 
-	cases := []SaveTestCase{
-		{
-			name: "empty url nil",
+	t.Run("empty url", func(t *testing.T) {
+		r := prepareShortenRequest("")
 
-			url:         nil,
-			contentType: &jsonContentType,
+		r.Header.Add("Content-Type", plainContentType)
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name: "empty url",
+		w := httptest.NewRecorder()
 
-			url:         &emptyStr,
-			contentType: &jsonContentType,
+		handler(w, r)
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name: "invalid header",
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Regexp(t, http.StatusText(http.StatusBadRequest), w.Body.String(), "Невалидный ответ")
+	})
+}
 
-			url: &validURL,
+func TestShortenHandlerInvalidHeader(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name:        "valid request",
-			url:         &validURL,
-			contentType: &jsonContentType,
+	config := config.GetAppConfigDefaults()
 
-			expectedCode: http.StatusCreated,
-			expectedBody: &validBodyMessage,
-		},
-		{
-			name:        "valid request",
-			url:         &existingURL,
-			contentType: &jsonContentType,
+	handler := BuildShortenHandler(&config, service)
 
-			expectedCode: http.StatusConflict,
-			expectedBody: &existingURLBodyMessage,
-		},
-	}
+	t.Run("invalid header", func(t *testing.T) {
+		r := prepareShortenRequest("http://example.com/path")
+		w := httptest.NewRecorder()
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var reader io.Reader = nil
+		handler(w, r)
 
-			if tc.url != nil {
-				req := `{"url":"` + *tc.url + `"}`
-				reader = strings.NewReader(req)
-			}
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Regexp(t, http.StatusText(http.StatusBadRequest), w.Body.String(), "Невалидный ответ")
+	})
+}
 
-			r := httptest.NewRequest(http.MethodPost, "/", reader)
+func TestShortenHandlerSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-			if tc.contentType != nil {
-				r.Header.Add("Content-Type", *tc.contentType)
-			}
+	config := config.GetAppConfigDefaults()
 
-			w := httptest.NewRecorder()
+	handler := BuildShortenHandler(&config, service)
 
-			handler(w, r)
+	originalURL := "http://example.com/path"
+	resCode := "example_code"
 
-			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
-			assert.Regexp(t, *tc.expectedBody, w.Body.String(), "Невалидный ответ")
-		})
-	}
+	t.Run("valid request", func(t *testing.T) {
+		r := prepareShortenRequest(originalURL)
+		r.Header.Add("Content-Type", "application/json")
+
+		service.EXPECT().SaveURL(gomock.Any(), originalURL).Return(&resCode, nil)
+
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusCreated, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, prepareShortenResponse(config, resCode), w.Body.String(), "Невалидный ответ")
+	})
+}
+
+func TestShortenHandlerConflict(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockService := mocks.NewMockURLService(ctrl)
+
+	config := config.GetAppConfigDefaults()
+
+	handler := BuildShortenHandler(&config, mockService)
+
+	t.Run("conflict", func(t *testing.T) {
+		r := prepareShortenRequest(existingURL)
+		r.Header.Add("Content-Type", "application/json")
+
+		mockService.EXPECT().SaveURL(gomock.Any(), existingURL).Return(nil, service.ErrUniqueValue)
+		mockService.EXPECT().RetrieveCode(gomock.Any(), existingURL).Return(&existingURLCode, nil)
+
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusConflict, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, prepareShortenResponse(config, existingURLCode), w.Body.String(), "Невалидный ответ")
+	})
 }

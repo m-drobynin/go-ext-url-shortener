@@ -90,6 +90,7 @@ func BuildShortenHandler(config SaveHandlerConfig, urlService service.URLService
 				}
 
 				handleConflictJSONResponse(config, w, *code)
+				return
 			}
 
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))

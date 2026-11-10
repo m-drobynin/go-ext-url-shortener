@@ -57,6 +57,7 @@ func BuildSaveHandler(config SaveHandlerConfig, urlService service.URLService) f
 				}
 
 				handleConflictResponse(config, w, *code)
+				return
 			}
 
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))
