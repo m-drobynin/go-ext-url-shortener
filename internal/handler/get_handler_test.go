@@ -3,98 +3,79 @@ package handler
 import (
 	"context"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-type GetTestCase struct {
-	name string
-	path string
+func setupTestGetCall(path string) (*httptest.ResponseRecorder, *http.Request) {
+	r := httptest.NewRequest(http.MethodGet, "http://localhost/"+path, nil)
+	w := httptest.NewRecorder()
 
-	expectedCode           int
-	expectedBody           *string
-	expectedLocationHeader *string
+	routeCtx := chi.NewRouteContext()
+	routeCtx.URLParams.Add("urlCode", path)
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, routeCtx))
+
+	return w, r
 }
 
-var existingURL = "existing_url"
-
-type TestGetURLServiceImpl struct {
-}
-
-func (service *TestGetURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
-	return nil, nil
-}
-
-func (service *TestGetURLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
-	return nil, nil
-}
-
-func (service *TestGetURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
-	if code == "existing_key" {
-		return &existingURL, nil
-	}
-
-	return nil, model.ErrDBNotFound
-}
-
-func TestGetHandler(t *testing.T) {
-	service := &TestGetURLServiceImpl{}
+func TestGetHandlerEmptyUrl(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
 	handler := BuildGetHandler(service)
 
-	var notFoundBody = http.StatusText(http.StatusNotFound)
-	var badRequestBody = http.StatusText(http.StatusBadRequest)
+	t.Run("empty url", func(t *testing.T) {
+		w, r := setupTestGetCall("")
 
-	cases := []GetTestCase{
-		{
-			name: "empty url",
-			path: "",
+		handler(w, r)
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name: "non existing url",
-			path: "nope",
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, http.StatusText(http.StatusBadRequest), w.Body.String(), "Тело ответа не совпадает с ожидаемым")
+	})
+}
 
-			expectedCode: http.StatusNotFound,
-			expectedBody: &notFoundBody,
-		},
-		{
-			name: "existing url",
-			path: "existing_key",
+func TestGetHandlerNonExistingUrl(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-			expectedCode:           http.StatusTemporaryRedirect,
-			expectedLocationHeader: &existingURL,
-		},
-	}
+	service := mocks.NewMockURLService(ctrl)
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			r := httptest.NewRequest(http.MethodGet, "http://localhost/"+tc.path, nil)
-			w := httptest.NewRecorder()
+	handler := BuildGetHandler(service)
 
-			routeCtx := chi.NewRouteContext()
-			routeCtx.URLParams.Add("urlCode", tc.path)
-			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, routeCtx))
+	t.Run("non existing url", func(t *testing.T) {
+		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(nil, model.ErrDBNotFound)
 
-			handler(w, r)
+		w, r := setupTestGetCall("nope")
+		handler(w, r)
 
-			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, http.StatusNotFound, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, http.StatusText(http.StatusNotFound), w.Body.String(), "Тело ответа не совпадает с ожидаемым")
+	})
+}
 
-			if tc.expectedBody != nil {
-				assert.Equal(t, *tc.expectedBody, w.Body.String(), "Тело ответа не совпадает с ожидаемым")
-			}
+func TestGetHandlerSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-			if tc.expectedLocationHeader != nil {
-				var locationHeader = w.Result().Header.Get("Location")
+	service := mocks.NewMockURLService(ctrl)
 
-				assert.Equal(t, *tc.expectedLocationHeader, locationHeader, "Заголовок Location не совпадает с ожидаемым")
-			}
-		})
-	}
+	handler := BuildGetHandler(service)
+
+	t.Run("existing url", func(t *testing.T) {
+		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(&existingURL, nil)
+
+		w, r := setupTestGetCall("existing_key")
+		handler(w, r)
+
+		assert.Equal(t, http.StatusTemporaryRedirect, w.Code, "Код ответа не совпадает с ожидаемым")
+		var locationHeader = w.Result().Header.Get("Location")
+		assert.Equal(t, existingURL, locationHeader, "Заголовок Location не совпадает с ожидаемым")
+	})
 }

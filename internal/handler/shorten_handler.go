@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/model"
@@ -27,7 +28,25 @@ func handleCreatedJSONResponse(config SaveHandlerConfig, w http.ResponseWriter, 
 	return nil
 }
 
-func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) func(w http.ResponseWriter, r *http.Request) {
+func handleConflictJSONResponse(config SaveHandlerConfig, w http.ResponseWriter, code string) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusConflict)
+
+	var response = model.ShortenResponse{
+		Result: config.GetBaseURL() + "/" + code,
+	}
+
+	res, err := json.Marshal(response)
+
+	if err != nil {
+		return err
+	}
+
+	w.Write(res)
+	return nil
+}
+
+func BuildShortenHandler(config SaveHandlerConfig, urlService service.URLService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			handleError(w, ErrBadRequest)
@@ -59,9 +78,21 @@ func BuildShortenHandler(config SaveHandlerConfig, service service.URLService) f
 			return
 		}
 
-		code, err := service.SaveURL(r.Context(), request.URL)
+		code, err := urlService.SaveURL(r.Context(), request.URL)
 
 		if err != nil {
+			if errors.Is(err, service.ErrUniqueValue) {
+				code, err = urlService.RetrieveCode(r.Context(), request.URL)
+
+				if err != nil {
+					handleError(w, fmt.Errorf("error while searching for url code: %v: %w", err, ErrInternal))
+					return
+				}
+
+				handleConflictJSONResponse(config, w, *code)
+				return
+			}
+
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))
 			return
 		}

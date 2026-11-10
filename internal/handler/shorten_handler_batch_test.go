@@ -47,6 +47,10 @@ func (service *TestBatchSaveURLServiceImpl) RetrieveURL(ctx context.Context, cod
 	return nil, nil
 }
 
+func (service *TestBatchSaveURLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	return nil, nil
+}
+
 func TestBatchShortenHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
 	service := &TestBatchSaveURLServiceImpl{}

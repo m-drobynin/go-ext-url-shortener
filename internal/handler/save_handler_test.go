@@ -1,17 +1,20 @@
 package handler
 
 import (
-	"context"
-	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
-	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/service"
+	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
+
+var existingURL = "http://existing.com/url"
+var existingURLCode = "existing_code"
 
 type SaveTestCase struct {
 	name        string
@@ -22,91 +25,98 @@ type SaveTestCase struct {
 	expectedBody *string
 }
 
-type TestSaveURLServiceImpl struct {
-}
+func TestSaveHandlerEmptyUrl(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-func (service *TestSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
-	res := "urlcodetest"
-	return &res, nil
-}
-
-func (service *TestSaveURLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
-	return nil, nil
-}
-
-func (service *TestSaveURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
-	return nil, nil
-}
-
-func TestSaveHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
-	service := &TestSaveURLServiceImpl{}
 
 	handler := BuildSaveHandler(&config, service)
 
 	plainContentType := "text/plain"
-	emptyStr := ""
-	validURL := "http://example.com/path"
-	badRequestBody := http.StatusText(http.StatusBadRequest)
-	validBodyMessage := config.BaseURL
 
-	cases := []SaveTestCase{
-		{
-			name: "empty url nil",
+	t.Run("empty url", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(""))
+		r.Header.Add("Content-Type", plainContentType)
 
-			url:         nil,
-			contentType: &plainContentType,
+		w := httptest.NewRecorder()
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name: "empty url",
+		handler(w, r)
 
-			url:         &emptyStr,
-			contentType: &plainContentType,
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Regexp(t, http.StatusText(http.StatusBadRequest), w.Body.String(), "Невалидный ответ")
+	})
+}
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name: "invalid header",
+func TestSaveHandlerInvalidHeader(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-			url: &validURL,
+	config := config.GetAppConfigDefaults()
 
-			expectedCode: http.StatusBadRequest,
-			expectedBody: &badRequestBody,
-		},
-		{
-			name:        "valid request",
-			url:         &validURL,
-			contentType: &plainContentType,
+	handler := BuildSaveHandler(&config, service)
 
-			expectedCode: http.StatusCreated,
-			expectedBody: &validBodyMessage,
-		},
-	}
+	t.Run("invalid header", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com/path"))
+		w := httptest.NewRecorder()
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var reader io.Reader = nil
+		handler(w, r)
 
-			if tc.url != nil {
-				reader = strings.NewReader(*tc.url)
-			}
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Regexp(t, http.StatusText(http.StatusBadRequest), w.Body.String(), "Невалидный ответ")
+	})
+}
 
-			r := httptest.NewRequest(http.MethodPost, "/", reader)
+func TestSaveHandlerSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-			if tc.contentType != nil {
-				r.Header.Add("Content-Type", *tc.contentType)
-			}
+	config := config.GetAppConfigDefaults()
 
-			w := httptest.NewRecorder()
+	handler := BuildSaveHandler(&config, service)
 
-			handler(w, r)
+	originalURL := "http://example.com/path"
+	resCode := "example_code"
 
-			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
-			assert.Regexp(t, *tc.expectedBody, w.Body.String(), "Невалидный ответ")
-		})
-	}
+	t.Run("valid request", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(originalURL))
+		r.Header.Add("Content-Type", "text/plain")
+
+		service.EXPECT().SaveURL(gomock.Any(), originalURL).Return(&resCode, nil)
+
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusCreated, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, config.GetBaseURL()+"/"+resCode, w.Body.String(), "Невалидный ответ")
+	})
+}
+
+func TestSaveHandlerConflict(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockService := mocks.NewMockURLService(ctrl)
+
+	config := config.GetAppConfigDefaults()
+
+	handler := BuildSaveHandler(&config, mockService)
+
+	t.Run("conflict", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(existingURL))
+		r.Header.Add("Content-Type", "text/plain")
+
+		mockService.EXPECT().SaveURL(gomock.Any(), existingURL).Return(nil, service.ErrUniqueValue)
+		mockService.EXPECT().RetrieveCode(gomock.Any(), existingURL).Return(&existingURLCode, nil)
+
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusConflict, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.Equal(t, config.GetBaseURL()+"/"+existingURLCode, w.Body.String(), "Невалидный ответ")
+	})
 }
