@@ -41,6 +41,10 @@ func (service *TestGetURLServiceImpl) RetrieveURL(ctx context.Context, code stri
 	return nil, model.ErrDBNotFound
 }
 
+func (service *TestGetURLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	return nil, nil
+}
+
 func TestGetHandler(t *testing.T) {
 	service := &TestGetURLServiceImpl{}
 

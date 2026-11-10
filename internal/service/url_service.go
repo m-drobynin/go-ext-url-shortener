@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
 
@@ -15,6 +17,7 @@ type URLService interface {
 	SaveURL(ctx context.Context, originalURL string) (*string, error)
 	SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error)
 	RetrieveURL(ctx context.Context, code string) (*string, error)
+	RetrieveCode(ctx context.Context, originalURL string) (*string, error)
 }
 
 type URLServiceImpl struct {
@@ -41,6 +44,10 @@ func (service *URLServiceImpl) SaveURL(ctx context.Context, originalURL string) 
 	err = service.db.Put(ctx, *generatedURLCode, originalURL)
 
 	if err != nil {
+		if errors.Is(err, model.ErrDBConflict) {
+			return nil, fmt.Errorf("%w:%w", ErrUniqueValue, err)
+		}
+
 		return nil, err
 	}
 
@@ -74,6 +81,10 @@ func (service *URLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) 
 
 func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
 	return service.db.Get(ctx, code)
+}
+
+func (service *URLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	return service.db.GetCode(ctx, originalURL)
 }
 
 func (service *URLServiceImpl) getNextRandomCode(ctx context.Context) (*string, error) {

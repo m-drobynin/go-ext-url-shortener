@@ -38,6 +38,10 @@ func (service *TestSaveURLServiceImpl) RetrieveURL(ctx context.Context, code str
 	return nil, nil
 }
 
+func (service *TestSaveURLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	return nil, nil
+}
+
 func TestSaveHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
 	service := &TestSaveURLServiceImpl{}

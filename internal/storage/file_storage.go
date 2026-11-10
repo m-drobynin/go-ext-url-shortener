@@ -83,6 +83,10 @@ func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
 	return fs.db.Get(ctx, key)
 }
 
+func (fs *FileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
+	return fs.db.Get(ctx, originalURL)
+}
+
 func (fs *FileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
