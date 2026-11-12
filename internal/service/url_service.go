@@ -1,48 +1,90 @@
 package service
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
+
+	"go.uber.org/zap"
 )
 
-const urlLength = 10
+const codeLength = 10
 const maxSaveAttempts = 10
 
 type URLService interface {
-	SaveURL(originalURL string) (*string, error)
-	RetrieveURL(code string) (*string, error)
+	SaveURL(ctx context.Context, originalURL string) (*string, error)
+	SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error)
+	RetrieveURL(ctx context.Context, code string) (*string, error)
+	RetrieveCode(ctx context.Context, originalURL string) (*string, error)
 }
 
 type URLServiceImpl struct {
-	db DBProvider
+	log *zap.Logger
+	db  DBProvider
 }
 
-func NewURLServiceImpl(db DBProvider) *URLServiceImpl {
-	service := &URLServiceImpl{}
-	service.db = db
+func NewURLServiceImpl(db DBProvider, log *zap.Logger) *URLServiceImpl {
+	service := &URLServiceImpl{
+		db:  db,
+		log: log,
+	}
+
 	return service
 }
 
-func (service *URLServiceImpl) SaveURL(originalURL string) (*string, error) {
-	i := 0
-
-	for i < maxSaveAttempts {
-		i++
-		generatedURLCode, err := utils.RandomCode(urlLength)
+func (service *URLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
+	for i := 0; i < maxSaveAttempts; i++ {
+		generatedURLCode, err := utils.RandomCode(codeLength)
 
 		if err != nil {
 			return nil, err
 		}
 
-		err = service.db.TryPut(generatedURLCode, originalURL)
+		err = service.db.Put(ctx, generatedURLCode, originalURL)
 
 		if err == nil {
 			return &generatedURLCode, nil
+		}
+
+		if errors.Is(err, model.ErrUrlsConflict) {
+			return nil, fmt.Errorf("%w:%w", ErrUniqueValue, err)
 		}
 	}
 
 	return nil, ErrSaveURLMaxAttempts
 }
 
-func (service *URLServiceImpl) RetrieveURL(code string) (*string, error) {
-	return service.db.Get(code)
+func (service *URLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
+	var results []model.ValuesPair
+
+	for _, url := range urls {
+		code, err := utils.RandomCode(codeLength)
+
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, model.ValuesPair{
+			Key:   code,
+			Value: url,
+		})
+	}
+
+	err := service.db.PutBatch(ctx, results)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &results, nil
+}
+
+func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
+	return service.db.Get(ctx, code)
+}
+
+func (service *URLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
+	return service.db.GetCode(ctx, originalURL)
 }

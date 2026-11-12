@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/service"
@@ -17,7 +18,13 @@ func handleCreatedResponse(config SaveHandlerConfig, w http.ResponseWriter, code
 	w.Write([]byte(config.GetBaseURL() + "/" + code))
 }
 
-func BuildSaveHandler(config SaveHandlerConfig, service service.URLService) func(w http.ResponseWriter, r *http.Request) {
+func handleConflictResponse(config SaveHandlerConfig, w http.ResponseWriter, code string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusConflict)
+	w.Write([]byte(config.GetBaseURL() + "/" + code))
+}
+
+func BuildSaveHandler(config SaveHandlerConfig, urlService service.URLService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "text/plain" {
 			handleError(w, ErrBadRequest)
@@ -37,9 +44,22 @@ func BuildSaveHandler(config SaveHandlerConfig, service service.URLService) func
 			return
 		}
 
-		code, err := service.SaveURL(string(body))
+		originalURL := string(body)
+		code, err := urlService.SaveURL(r.Context(), originalURL)
 
 		if err != nil {
+			if errors.Is(err, service.ErrUniqueValue) {
+				code, err = urlService.RetrieveCode(r.Context(), originalURL)
+
+				if err != nil {
+					handleError(w, fmt.Errorf("error while searching for url code: %v: %w", err, ErrInternal))
+					return
+				}
+
+				handleConflictResponse(config, w, *code)
+				return
+			}
+
 			handleError(w, fmt.Errorf("error while saving url: %v: %w", err, ErrInternal))
 			return
 		}

@@ -4,8 +4,8 @@ import (
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/logger"
-	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
+	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -40,10 +40,10 @@ func testRequest(t *testing.T, method,
 }
 
 func TestRouterHappyRoute(t *testing.T) {
-	database := model.NewDatabase()
-	service := service.NewURLServiceImpl(database)
-	config := config.GetAppConfigDefaults()
+	database := storage.NewMemoryDatabase()
 	log, _ := logger.NewLogger("info")
+	service := service.NewURLServiceImpl(database, log)
+	config := config.GetAppConfigDefaults()
 
 	handler := prepareApplication(&config, service, log)
 
