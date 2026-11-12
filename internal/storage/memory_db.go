@@ -25,16 +25,16 @@ func (db *MemoryDatabase) Put(ctx context.Context, key string, value string) err
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	_, ok := db.rowsMap[key]
+	_, ok := db.reverseURLMap[value]
 
 	if ok {
-		return model.ErrDBConflict
+		return model.ErrUrlsConflict
 	}
 
-	_, ok = db.reverseURLMap[value]
+	_, ok = db.rowsMap[key]
 
 	if ok {
-		return model.ErrDBConflict
+		return model.ErrCodeConflict
 	}
 
 	db.rowsMap[key] = value

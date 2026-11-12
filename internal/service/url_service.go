@@ -35,37 +35,39 @@ func NewURLServiceImpl(db DBProvider, log *zap.Logger) *URLServiceImpl {
 }
 
 func (service *URLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
-	generatedURLCode, err := service.getNextRandomCode(ctx)
+	for i := 0; i < maxSaveAttempts; i++ {
+		generatedURLCode, err := utils.RandomCode(codeLength)
 
-	if err != nil {
-		return nil, err
-	}
-
-	err = service.db.Put(ctx, *generatedURLCode, originalURL)
-
-	if err != nil {
-		if errors.Is(err, model.ErrDBConflict) {
-			return nil, fmt.Errorf("%w:%w", ErrUniqueValue, err)
+		if err != nil {
+			return nil, err
 		}
 
-		return nil, err
+		err = service.db.Put(ctx, generatedURLCode, originalURL)
+
+		if err == nil {
+			return &generatedURLCode, nil
+		}
+
+		if errors.Is(err, model.ErrUrlsConflict) {
+			return nil, fmt.Errorf("%w:%w", ErrUniqueValue, err)
+		}
 	}
 
-	return generatedURLCode, nil
+	return nil, ErrSaveURLMaxAttempts
 }
 
 func (service *URLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
 	var results []model.ValuesPair
 
 	for _, url := range urls {
-		code, err := service.getNextRandomCode(ctx)
+		code, err := utils.RandomCode(codeLength)
 
 		if err != nil {
 			return nil, err
 		}
 
 		results = append(results, model.ValuesPair{
-			Key:   *code,
+			Key:   code,
 			Value: url,
 		})
 	}
@@ -85,22 +87,4 @@ func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*s
 
 func (service *URLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
 	return service.db.GetCode(ctx, originalURL)
-}
-
-func (service *URLServiceImpl) getNextRandomCode(ctx context.Context) (*string, error) {
-	for i := 0; i < maxSaveAttempts; i++ {
-		generatedURLCode, err := utils.RandomCode(codeLength)
-
-		if err != nil {
-			return nil, err
-		}
-
-		res, _ := service.db.Get(ctx, generatedURLCode)
-
-		if res == nil {
-			return &generatedURLCode, nil
-		}
-	}
-
-	return nil, ErrSaveURLMaxAttempts
 }

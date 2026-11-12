@@ -84,7 +84,7 @@ func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
 }
 
 func (fs *FileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
-	return fs.db.Get(ctx, originalURL)
+	return fs.db.GetCode(ctx, originalURL)
 }
 
 func (fs *FileStorage) read() error {

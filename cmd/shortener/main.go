@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -22,21 +20,6 @@ import (
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func BuildPingHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		err := db.PingContext(ctx)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
 	}
 }
 
@@ -56,7 +39,7 @@ func run() error {
 	var db *sql.DB
 
 	if config.DatabaseDSN != "" {
-		db, err = repository.PreprareDBConnection(config.DatabaseDSN)
+		db, err = repository.PrepareDBConnection(config.DatabaseDSN)
 
 		if err != nil {
 			return err
@@ -73,7 +56,7 @@ func run() error {
 	router := prepareApplication(config, service, log)
 
 	if db != nil {
-		router.Get("/ping", BuildPingHandler(db))
+		router.Get("/ping", handler.BuildPingHandler(db))
 	}
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)

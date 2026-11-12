@@ -32,12 +32,20 @@ func (psDb *PostgresDB) Put(ctx context.Context, key string, value string) error
 
 	if err != nil {
 		var pgErr *pgconn.PgError
+
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			err = model.ErrDBConflict
+			switch pgErr.ConstraintName {
+			case "idx_urls_original_url":
+				return model.ErrUrlsConflict
+			case "idx_urls_short_url":
+				return model.ErrCodeConflict
+			default:
+				return err
+			}
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (psDb *PostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
@@ -74,6 +82,10 @@ func (psDb *PostgresDB) Get(ctx context.Context, key string) (*string, error) {
 	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, model.ErrDBNotFound
+		}
+
 		return nil, err
 	}
 
@@ -88,6 +100,10 @@ func (psDb *PostgresDB) GetCode(ctx context.Context, originalURL string) (*strin
 	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, model.ErrDBNotFound
+		}
+
 		return nil, err
 	}
 
