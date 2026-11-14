@@ -6,14 +6,14 @@ import (
 	"sync"
 )
 
-type MemoryDatabase struct {
+type UrlsMemoryDatabase struct {
 	mu            sync.Mutex
 	rowsMap       map[string]string
 	reverseURLMap map[string]string
 }
 
-func NewMemoryDatabase() *MemoryDatabase {
-	var database = &MemoryDatabase{
+func NewUrlsMemoryDatabase() *UrlsMemoryDatabase {
+	var database = &UrlsMemoryDatabase{
 		rowsMap:       make(map[string]string),
 		reverseURLMap: make(map[string]string),
 	}
@@ -21,7 +21,7 @@ func NewMemoryDatabase() *MemoryDatabase {
 	return database
 }
 
-func (db *MemoryDatabase) Put(ctx context.Context, key string, value string) error {
+func (db *UrlsMemoryDatabase) Put(ctx context.Context, key string, value string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -43,7 +43,7 @@ func (db *MemoryDatabase) Put(ctx context.Context, key string, value string) err
 	return nil
 }
 
-func (db *MemoryDatabase) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+func (db *UrlsMemoryDatabase) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
 	for _, pair := range pairs {
 		err := db.Put(ctx, pair.Key, pair.Value)
 
@@ -55,7 +55,7 @@ func (db *MemoryDatabase) PutBatch(ctx context.Context, pairs []model.ValuesPair
 	return nil
 }
 
-func (db *MemoryDatabase) Get(ctx context.Context, key string) (*string, error) {
+func (db *UrlsMemoryDatabase) Get(ctx context.Context, key string) (*string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -68,7 +68,7 @@ func (db *MemoryDatabase) Get(ctx context.Context, key string) (*string, error) 
 	return nil, model.ErrDBNotFound
 }
 
-func (db *MemoryDatabase) GetCode(ctx context.Context, originalURL string) (*string, error) {
+func (db *UrlsMemoryDatabase) GetCode(ctx context.Context, originalURL string) (*string, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 

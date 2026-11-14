@@ -10,3 +10,7 @@ type ValuesPair struct {
 	Key   string
 	Value string
 }
+
+type User struct {
+	UserID string
+}

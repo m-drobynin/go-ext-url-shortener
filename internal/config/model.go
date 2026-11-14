@@ -7,11 +7,12 @@ import (
 )
 
 type AppConfig struct {
-	Version         string
-	NetAddress      NetAddress
-	BaseURL         string
-	FileStoragePath string
-	DatabaseDSN     string
+	Version              string
+	NetAddress           NetAddress
+	BaseURL              string
+	FileStoragePath      string
+	UsersFileStoragePath string
+	DatabaseDSN          string
 }
 
 type NetAddress struct {
@@ -20,10 +21,11 @@ type NetAddress struct {
 }
 
 type EnvConfig struct {
-	ServerAddress   string `env:"SERVER_ADDRESS"`
-	BaseURL         string `env:"BASE_URL"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	DatabaseDSN     string `env:"DATABASE_DSN"`
+	ServerAddress        string `env:"SERVER_ADDRESS"`
+	BaseURL              string `env:"BASE_URL"`
+	FileStoragePath      string `env:"FILE_STORAGE_PATH"`
+	UsersFileStoragePath string `env:"USERS_FILE_STORAGE_PATH"`
+	DatabaseDSN          string `env:"DATABASE_DSN"`
 }
 
 func (address *NetAddress) String() string {
@@ -70,6 +72,10 @@ func (config *AppConfig) SetFromEnv(envConfig EnvConfig) error {
 
 	if envConfig.FileStoragePath != "" {
 		config.FileStoragePath = envConfig.FileStoragePath
+	}
+
+	if envConfig.UsersFileStoragePath != "" {
+		config.UsersFileStoragePath = envConfig.UsersFileStoragePath
 	}
 
 	if envConfig.DatabaseDSN != "" {

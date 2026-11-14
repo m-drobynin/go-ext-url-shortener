@@ -9,25 +9,25 @@ import (
 	"uuid"
 )
 
-type FileStorage struct {
+type UrlsFileStorage struct {
 	filename string
 	file     *os.File
 	scanner  *bufio.Scanner
-	db       *MemoryDatabase
+	db       *UrlsMemoryDatabase
 }
 
-func NewFileStorage(filename string) (*FileStorage, error) {
+func NewUrlsFileStorage(filename string) (*UrlsFileStorage, error) {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fs := FileStorage{
+	fs := UrlsFileStorage{
 		filename: filename,
 		file:     file,
 		scanner:  bufio.NewScanner(file),
-		db:       NewMemoryDatabase(),
+		db:       NewUrlsMemoryDatabase(),
 	}
 
 	if err := fs.read(); err != nil {
@@ -37,7 +37,7 @@ func NewFileStorage(filename string) (*FileStorage, error) {
 	return &fs, nil
 }
 
-func (fs *FileStorage) Put(ctx context.Context, key string, value string) error {
+func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string) error {
 	err := fs.db.Put(ctx, key, value)
 
 	if err != nil {
@@ -67,7 +67,7 @@ func (fs *FileStorage) Put(ctx context.Context, key string, value string) error 
 	return nil
 }
 
-func (fs *FileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
 	for _, pair := range pairs {
 		err := fs.Put(ctx, pair.Key, pair.Value)
 
@@ -79,15 +79,15 @@ func (fs *FileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair) e
 	return nil
 }
 
-func (fs *FileStorage) Get(ctx context.Context, key string) (*string, error) {
+func (fs *UrlsFileStorage) Get(ctx context.Context, key string) (*string, error) {
 	return fs.db.Get(ctx, key)
 }
 
-func (fs *FileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
+func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
 	return fs.db.GetCode(ctx, originalURL)
 }
 
-func (fs *FileStorage) read() error {
+func (fs *UrlsFileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
 		row := model.ShortenedURLRow{}

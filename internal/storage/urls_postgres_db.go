@@ -11,24 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const insertSQL = `INSERT INTO urls (uuid, short_url, original_url) VALUES ($1, $2, $3)`
-const findSQL = `SELECT uuid, short_url, original_url FROM urls WHERE short_url=$1`
-const findByValueSQL = `SELECT uuid, short_url, original_url FROM urls WHERE original_url=$1`
+const insertURLSQL = `INSERT INTO urls (uuid, short_url, original_url) VALUES ($1, $2, $3)`
+const findURLSQL = `SELECT uuid, short_url, original_url FROM urls WHERE short_url=$1`
+const findByOriginalURLSQL = `SELECT uuid, short_url, original_url FROM urls WHERE original_url=$1`
 
-type PostgresDB struct {
+type UrlsPostgresDB struct {
 	db *sql.DB
 }
 
-func NewPostgresDB(db *sql.DB, connectionString string) (*PostgresDB, error) {
-	res := &PostgresDB{
+func NewUrlsPostgresDB(db *sql.DB) (*UrlsPostgresDB, error) {
+	res := &UrlsPostgresDB{
 		db: db,
 	}
 
 	return res, nil
 }
 
-func (psDb *PostgresDB) Put(ctx context.Context, key string, value string) error {
-	_, err := psDb.db.ExecContext(ctx, insertSQL, uuid.NewV4().String(), key, value)
+func (psDb *UrlsPostgresDB) Put(ctx context.Context, key string, value string) error {
+	_, err := psDb.db.ExecContext(ctx, insertURLSQL, uuid.NewV4().String(), key, value)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -48,7 +48,7 @@ func (psDb *PostgresDB) Put(ctx context.Context, key string, value string) error
 	return nil
 }
 
-func (psDb *PostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+func (psDb *UrlsPostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
 	tx, err := psDb.db.Begin()
 
 	if err != nil {
@@ -56,7 +56,7 @@ func (psDb *PostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPair) 
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.PrepareContext(ctx, insertSQL)
+	stmt, err := tx.PrepareContext(ctx, insertURLSQL)
 
 	if err != nil {
 		return err
@@ -74,8 +74,8 @@ func (psDb *PostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPair) 
 	return tx.Commit()
 }
 
-func (psDb *PostgresDB) Get(ctx context.Context, key string) (*string, error) {
-	row := psDb.db.QueryRowContext(ctx, findSQL, key)
+func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*string, error) {
+	row := psDb.db.QueryRowContext(ctx, findURLSQL, key)
 
 	var urlRow model.ShortenedURLRow
 
@@ -92,8 +92,8 @@ func (psDb *PostgresDB) Get(ctx context.Context, key string) (*string, error) {
 	return &urlRow.OriginalURL, nil
 }
 
-func (psDb *PostgresDB) GetCode(ctx context.Context, originalURL string) (*string, error) {
-	row := psDb.db.QueryRowContext(ctx, findByValueSQL, originalURL)
+func (psDb *UrlsPostgresDB) GetCode(ctx context.Context, originalURL string) (*string, error) {
+	row := psDb.db.QueryRowContext(ctx, findByOriginalURLSQL, originalURL)
 
 	var urlRow model.ShortenedURLRow
 

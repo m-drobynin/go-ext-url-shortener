@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFileStorage(t *testing.T) {
-	fs, err := NewFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
+func TestUrlsFileStorage(t *testing.T) {
+	fs, err := NewUrlsFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
 
 	assert.NoError(t, err, "error while creating a db")
 

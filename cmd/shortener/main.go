@@ -46,14 +46,22 @@ func run() error {
 		}
 	}
 
-	storage, err := prepareStorage(config, db)
+	urlsStorage, err := prepareUrlsStorage(config, db)
 
 	if err != nil {
 		return err
 	}
 
-	service := service.NewURLServiceImpl(storage, log)
-	router := prepareApplication(config, service, log)
+	usersStorage, err := prepareUsersStorage(config, db)
+
+	if err != nil {
+		return err
+	}
+
+	urlsService := service.NewURLServiceImpl(urlsStorage)
+	usersService := service.NewUsersServiceImpl(usersStorage)
+
+	router := prepareApplication(config, urlsService, usersService, log)
 
 	if db != nil {
 		router.Get("/ping", handler.BuildPingHandler(db))
@@ -62,27 +70,39 @@ func run() error {
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
 }
 
-func prepareStorage(config *config.AppConfig, db *sql.DB) (service.DBProvider, error) {
+func prepareUrlsStorage(config *config.AppConfig, db *sql.DB) (storage.UrlsDBProvider, error) {
 	if db != nil {
-		return storage.NewPostgresDB(db, config.DatabaseDSN)
+		return storage.NewUrlsPostgresDB(db)
 	}
 
 	if config.FileStoragePath != "" {
-		return storage.NewFileStorage(config.FileStoragePath)
+		return storage.NewUrlsFileStorage(config.FileStoragePath)
 	}
 
-	return storage.NewMemoryDatabase(), nil
+	return storage.NewUrlsMemoryDatabase(), nil
 }
 
-func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {
+func prepareUsersStorage(config *config.AppConfig, db *sql.DB) (storage.UsersDBProvider, error) {
+	if db != nil {
+		return storage.NewUsersPostgresDB(db)
+	}
+
+	if config.FileStoragePath != "" {
+		return storage.NewUsersFileStorage(config.UsersFileStoragePath)
+	}
+
+	return storage.NewUsersMemoryDatabase(), nil
+}
+
+func prepareApplication(config *config.AppConfig, urlsService service.URLService, usersService service.UsersService, log *zap.Logger) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middleware.NewLoggerMiddleware(log), middleware.WithGzip)
+	r.Use(middleware.NewLoggerMiddleware(log), middleware.WithGzip, middleware.WithJwtAuthorization)
 
-	var saveHandler = handler.BuildSaveHandler(config, service)
-	var getHandler = handler.BuildGetHandler(service)
-	var shortenHandler = handler.BuildShortenHandler(config, service)
-	var batchShortenHandler = handler.BuildBatchShortenHandler(config, service)
+	var saveHandler = handler.BuildSaveHandler(config, urlsService)
+	var getHandler = handler.BuildGetHandler(urlsService)
+	var shortenHandler = handler.BuildShortenHandler(config, urlsService)
+	var batchShortenHandler = handler.BuildBatchShortenHandler(config, urlsService)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)

@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
-
-	"go.uber.org/zap"
 )
 
 const codeLength = 10
@@ -21,14 +20,12 @@ type URLService interface {
 }
 
 type URLServiceImpl struct {
-	log *zap.Logger
-	db  DBProvider
+	db storage.UrlsDBProvider
 }
 
-func NewURLServiceImpl(db DBProvider, log *zap.Logger) *URLServiceImpl {
+func NewURLServiceImpl(db storage.UrlsDBProvider) *URLServiceImpl {
 	service := &URLServiceImpl{
-		db:  db,
-		log: log,
+		db: db,
 	}
 
 	return service
