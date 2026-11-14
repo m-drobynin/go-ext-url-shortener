@@ -4,5 +4,4 @@ CREATE TABLE urls (
     original_url VARCHAR(2550) NOT NULL
 );
 
--- Базовый индекс для поиска по названию
 CREATE INDEX idx_urls_short_url ON urls(short_url);

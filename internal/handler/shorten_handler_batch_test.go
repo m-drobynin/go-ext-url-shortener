@@ -7,53 +7,78 @@ import (
 	"io"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
+	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-type BatchSaveTestCase struct {
-	name         string
-	rows         *[]model.ShortenBatchRequestRow
-	contentType  *string
-	expectedCode int
-}
+func TestBatchShortenHandlerEmptyRows(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
 
-type TestBatchSaveURLServiceImpl struct {
-}
-
-func (service *TestBatchSaveURLServiceImpl) SaveURL(ctx context.Context, originalURL string) (*string, error) {
-	return nil, nil
-}
-
-func (service *TestBatchSaveURLServiceImpl) SaveURLBatch(ctx context.Context, urls []string) (*[]model.ValuesPair, error) {
-	res := []model.ValuesPair{
-		{
-			Key:   "code_1",
-			Value: "url_1",
-		},
-		{
-			Key:   "code_2",
-			Value: "url_2",
-		},
-	}
-
-	return &res, nil
-}
-
-func (service *TestBatchSaveURLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
-	return nil, nil
-}
-
-func (service *TestBatchSaveURLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
-	return nil, nil
-}
-
-func TestBatchShortenHandler(t *testing.T) {
 	config := config.GetAppConfigDefaults()
-	service := &TestBatchSaveURLServiceImpl{}
+
+	handler := BuildBatchShortenHandler(&config, service)
+
+	jsonContentType := "application/json"
+
+	emptyRequest := []model.ShortenBatchRequestRow{}
+
+	t.Run("empty rows", func(t *testing.T) {
+		var reader io.Reader = nil
+
+		reqJSONBytes, _ := json.Marshal(emptyRequest)
+		reader = bytes.NewReader(reqJSONBytes)
+
+		r := httptest.NewRequest(http.MethodPost, "/", reader)
+
+		r.Header.Add("Content-Type", jsonContentType)
+
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+	})
+}
+
+func TestBatchShortenHandlerInvalidHeader(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
+
+	config := config.GetAppConfigDefaults()
+
+	handler := BuildBatchShortenHandler(&config, service)
+
+	emptyRequest := []model.ShortenBatchRequestRow{}
+
+	t.Run("invalid header", func(t *testing.T) {
+		var reader io.Reader = nil
+
+		reqJSONBytes, _ := json.Marshal(emptyRequest)
+		reader = bytes.NewReader(reqJSONBytes)
+
+		r := httptest.NewRequest(http.MethodPost, "/", reader)
+		w := httptest.NewRecorder()
+
+		handler(w, r)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Код ответа не совпадает с ожидаемым")
+	})
+}
+
+func TestBatchShortenHandlerSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	service := mocks.NewMockURLService(ctrl)
+
+	config := config.GetAppConfigDefaults()
 
 	handler := BuildBatchShortenHandler(&config, service)
 
@@ -70,7 +95,6 @@ func TestBatchShortenHandler(t *testing.T) {
 	})
 	validBodyMessage := string(validBodyMessageRaw)
 
-	emptyRequest := []model.ShortenBatchRequestRow{}
 	validRequest := []model.ShortenBatchRequestRow{
 		{
 			CorrelationID: "id_1",
@@ -82,52 +106,35 @@ func TestBatchShortenHandler(t *testing.T) {
 		},
 	}
 
-	cases := []BatchSaveTestCase{
+	serviceRes := []model.ValuesPair{
 		{
-			name: "empty rows",
-
-			rows:        &emptyRequest,
-			contentType: &jsonContentType,
-
-			expectedCode: http.StatusBadRequest,
+			Key:   "code_1",
+			Value: "url_1",
 		},
 		{
-			name: "invalid header",
-			rows: &emptyRequest,
-
-			expectedCode: http.StatusBadRequest,
-		},
-		{
-			name:        "valid request",
-			rows:        &validRequest,
-			contentType: &jsonContentType,
-
-			expectedCode: http.StatusCreated,
+			Key:   "code_2",
+			Value: "url_2",
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			var reader io.Reader = nil
+	t.Run("valid request", func(t *testing.T) {
+		var reader io.Reader = nil
 
-			reqJSONBytes, _ := json.Marshal(tc.rows)
-			reader = bytes.NewReader(reqJSONBytes)
+		reqJSONBytes, _ := json.Marshal(validRequest)
+		reader = bytes.NewReader(reqJSONBytes)
 
-			r := httptest.NewRequest(http.MethodPost, "/", reader)
+		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", reader)
 
-			if tc.contentType != nil {
-				r.Header.Add("Content-Type", *tc.contentType)
-			}
+		r.Header.Add("Content-Type", jsonContentType)
 
-			w := httptest.NewRecorder()
+		w := httptest.NewRecorder()
 
-			handler(w, r)
+		service.EXPECT().SaveURLBatch(ctx, gomock.Any(), gomock.Any()).Return(&serviceRes, nil)
 
-			assert.Equal(t, tc.expectedCode, w.Code, "Код ответа не совпадает с ожидаемым")
+		handler(w, r)
 
-			if len(*tc.rows) != 0 {
-				assert.JSONEq(t, validBodyMessage, w.Body.String(), "invalid response body")
-			}
-		})
-	}
+		assert.Equal(t, http.StatusCreated, w.Code, "Код ответа не совпадает с ожидаемым")
+		assert.JSONEq(t, validBodyMessage, w.Body.String(), "invalid response body")
+	})
 }

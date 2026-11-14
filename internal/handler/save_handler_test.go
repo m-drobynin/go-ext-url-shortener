@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/mocks"
@@ -82,10 +83,11 @@ func TestSaveHandlerSuccess(t *testing.T) {
 	resCode := "example_code"
 
 	t.Run("valid request", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(originalURL))
+		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(originalURL))
 		r.Header.Add("Content-Type", "text/plain")
 
-		service.EXPECT().SaveURL(gomock.Any(), originalURL).Return(&resCode, nil)
+		service.EXPECT().SaveURL(gomock.Any(), originalURL, gomock.Any()).Return(&resCode, nil)
 
 		w := httptest.NewRecorder()
 
@@ -106,10 +108,12 @@ func TestSaveHandlerConflict(t *testing.T) {
 	handler := BuildSaveHandler(&config, mockService)
 
 	t.Run("conflict", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(existingURL))
+		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(existingURL))
+
 		r.Header.Add("Content-Type", "text/plain")
 
-		mockService.EXPECT().SaveURL(gomock.Any(), existingURL).Return(nil, service.ErrUniqueValue)
+		mockService.EXPECT().SaveURL(gomock.Any(), existingURL, gomock.Any()).Return(nil, service.ErrUniqueValue)
 		mockService.EXPECT().RetrieveCode(gomock.Any(), existingURL).Return(&existingURLCode, nil)
 
 		w := httptest.NewRecorder()

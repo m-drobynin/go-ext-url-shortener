@@ -13,7 +13,7 @@ import (
 
 var ErrDBConnStringEmpty = errors.New("db_conn_string_empty")
 
-func PreprareDBConnection(connString string) (*sql.DB, error) {
+func PrepareDBConnection(connString string) (*sql.DB, error) {
 	if connString == "" {
 		return nil, ErrDBConnStringEmpty
 	}

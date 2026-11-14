@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,7 +12,6 @@ import (
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -22,21 +20,6 @@ import (
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func BuildPingHandler(db *sql.DB) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		err := db.PingContext(ctx)
-
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
 	}
 }
 
@@ -56,50 +39,70 @@ func run() error {
 	var db *sql.DB
 
 	if config.DatabaseDSN != "" {
-		db, err = repository.PreprareDBConnection(config.DatabaseDSN)
+		db, err = repository.PrepareDBConnection(config.DatabaseDSN)
 
 		if err != nil {
 			return err
 		}
 	}
 
-	storage, err := prepareStorage(config, db)
+	urlsStorage, err := prepareUrlsStorage(config, db)
 
 	if err != nil {
 		return err
 	}
 
-	service := service.NewURLServiceImpl(storage, log)
-	router := prepareApplication(config, service, log)
+	usersStorage, err := prepareUsersStorage(config, db)
+
+	if err != nil {
+		return err
+	}
+
+	urlsService := service.NewURLServiceImpl(urlsStorage)
+	usersService := service.NewUsersServiceImpl(usersStorage)
+
+	router := prepareApplication(config, urlsService, usersService, log)
 
 	if db != nil {
-		router.Get("/ping", BuildPingHandler(db))
+		router.Get("/ping", handler.BuildPingHandler(db))
 	}
 
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.NetAddress.Port), router)
 }
 
-func prepareStorage(config *config.AppConfig, db *sql.DB) (service.DBProvider, error) {
+func prepareUrlsStorage(config *config.AppConfig, db *sql.DB) (storage.UrlsDBProvider, error) {
 	if db != nil {
-		return storage.NewPostgresDB(db, config.DatabaseDSN)
+		return storage.NewUrlsPostgresDB(db)
 	}
 
 	if config.FileStoragePath != "" {
-		return storage.NewFileStorage(config.FileStoragePath)
+		return storage.NewUrlsFileStorage(config.FileStoragePath)
 	}
 
-	return storage.NewMemoryDatabase(), nil
+	return storage.NewUrlsMemoryDatabase(), nil
 }
 
-func prepareApplication(config *config.AppConfig, service service.URLService, log *zap.Logger) chi.Router {
+func prepareUsersStorage(config *config.AppConfig, db *sql.DB) (storage.UsersDBProvider, error) {
+	if db != nil {
+		return storage.NewUsersPostgresDB(db)
+	}
+
+	if config.FileStoragePath != "" {
+		return storage.NewUsersFileStorage(config.UsersFileStoragePath)
+	}
+
+	return storage.NewUsersMemoryDatabase(), nil
+}
+
+func prepareApplication(config *config.AppConfig, urlsService service.URLService, usersService service.UsersService, log *zap.Logger) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middleware.NewLoggerMiddleware(log), middleware.WithGzip)
+	r.Use(middleware.NewLoggerMiddleware(log), middleware.WithGzip, middleware.WithJwtAuthorization)
 
-	var saveHandler = handler.BuildSaveHandler(config, service)
-	var getHandler = handler.BuildGetHandler(service)
-	var shortenHandler = handler.BuildShortenHandler(config, service)
-	var batchShortenHandler = handler.BuildBatchShortenHandler(config, service)
+	var saveHandler = handler.BuildSaveHandler(config, urlsService)
+	var getHandler = handler.BuildGetHandler(urlsService)
+	var shortenHandler = handler.BuildShortenHandler(config, urlsService)
+	var batchShortenHandler = handler.BuildBatchShortenHandler(config, urlsService)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)

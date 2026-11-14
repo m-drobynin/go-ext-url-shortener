@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/mocks"
@@ -13,9 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func prepareShortenRequest(originalURL string) *http.Request {
+func prepareShortenRequest(t *testing.T, originalURL string) *http.Request {
+	ctx := context.WithValue(t.Context(), "user_id", "user_id")
 	reqBody := `{"url":"` + originalURL + `"}`
-	return httptest.NewRequest(http.MethodPost, "/", strings.NewReader(reqBody))
+	return httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(reqBody))
 }
 
 func prepareShortenResponse(config config.AppConfig, code string) string {
@@ -34,7 +36,7 @@ func TestShortenHandlerEmptyUrl(t *testing.T) {
 	plainContentType := "text/plain"
 
 	t.Run("empty url", func(t *testing.T) {
-		r := prepareShortenRequest("")
+		r := prepareShortenRequest(t, "")
 
 		r.Header.Add("Content-Type", plainContentType)
 
@@ -57,7 +59,7 @@ func TestShortenHandlerInvalidHeader(t *testing.T) {
 	handler := BuildShortenHandler(&config, service)
 
 	t.Run("invalid header", func(t *testing.T) {
-		r := prepareShortenRequest("http://example.com/path")
+		r := prepareShortenRequest(t, "http://example.com/path")
 		w := httptest.NewRecorder()
 
 		handler(w, r)
@@ -80,10 +82,10 @@ func TestShortenHandlerSuccess(t *testing.T) {
 	resCode := "example_code"
 
 	t.Run("valid request", func(t *testing.T) {
-		r := prepareShortenRequest(originalURL)
+		r := prepareShortenRequest(t, originalURL)
 		r.Header.Add("Content-Type", "application/json")
 
-		service.EXPECT().SaveURL(gomock.Any(), originalURL).Return(&resCode, nil)
+		service.EXPECT().SaveURL(gomock.Any(), originalURL, gomock.Any()).Return(&resCode, nil)
 
 		w := httptest.NewRecorder()
 
@@ -104,10 +106,10 @@ func TestShortenHandlerConflict(t *testing.T) {
 	handler := BuildShortenHandler(&config, mockService)
 
 	t.Run("conflict", func(t *testing.T) {
-		r := prepareShortenRequest(existingURL)
+		r := prepareShortenRequest(t, existingURL)
 		r.Header.Add("Content-Type", "application/json")
 
-		mockService.EXPECT().SaveURL(gomock.Any(), existingURL).Return(nil, service.ErrUniqueValue)
+		mockService.EXPECT().SaveURL(gomock.Any(), existingURL, gomock.Any()).Return(nil, service.ErrUniqueValue)
 		mockService.EXPECT().RetrieveCode(gomock.Any(), existingURL).Return(&existingURLCode, nil)
 
 		w := httptest.NewRecorder()
