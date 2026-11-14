@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 )
 
@@ -11,6 +12,9 @@ func WithJwtAuthorization(h http.Handler) http.Handler {
 		// if err != nil && errors.Is(err, http.ErrNoCookie) {
 
 		// }
+
+		ctx := context.WithValue(r.Context(), "user_id", "user_id")
+		r = r.WithContext(ctx)
 
 		h.ServeHTTP(w, r)
 	})

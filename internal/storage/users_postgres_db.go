@@ -12,7 +12,7 @@ const findUserSQL = `SELECT user_id FROM users WHERE user_id=$1`
 
 type UsersPostgresDB struct {
 	db      *sql.DB
-	usersDb *UsersMemoryDatabase
+	usersDB *UsersMemoryDatabase
 }
 
 func NewUsersPostgresDB(db *sql.DB) (*UsersPostgresDB, error) {
@@ -24,7 +24,7 @@ func NewUsersPostgresDB(db *sql.DB) (*UsersPostgresDB, error) {
 }
 
 func (psDb *UsersPostgresDB) Create(ctx context.Context) (*model.User, error) {
-	user, err := psDb.usersDb.Create(ctx)
+	user, err := psDb.usersDB.Create(ctx)
 
 	if err != nil {
 		return nil, err

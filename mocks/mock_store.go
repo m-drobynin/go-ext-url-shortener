@@ -66,31 +66,31 @@ func (mr *MockURLServiceMockRecorder) RetrieveURL(arg0, arg1 interface{}) *gomoc
 }
 
 // SaveURL mocks base method.
-func (m *MockURLService) SaveURL(arg0 context.Context, arg1 string) (*string, error) {
+func (m *MockURLService) SaveURL(arg0 context.Context, arg1, arg2 string) (*string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveURL", arg0, arg1)
+	ret := m.ctrl.Call(m, "SaveURL", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveURL indicates an expected call of SaveURL.
-func (mr *MockURLServiceMockRecorder) SaveURL(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLServiceMockRecorder) SaveURL(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockURLService)(nil).SaveURL), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURL", reflect.TypeOf((*MockURLService)(nil).SaveURL), arg0, arg1, arg2)
 }
 
 // SaveURLBatch mocks base method.
-func (m *MockURLService) SaveURLBatch(arg0 context.Context, arg1 []string) (*[]model.ValuesPair, error) {
+func (m *MockURLService) SaveURLBatch(arg0 context.Context, arg1 []string, arg2 string) (*[]model.ValuesPair, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveURLBatch", arg0, arg1)
+	ret := m.ctrl.Call(m, "SaveURLBatch", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*[]model.ValuesPair)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveURLBatch indicates an expected call of SaveURLBatch.
-func (mr *MockURLServiceMockRecorder) SaveURLBatch(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockURLServiceMockRecorder) SaveURLBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURLBatch", reflect.TypeOf((*MockURLService)(nil).SaveURLBatch), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveURLBatch", reflect.TypeOf((*MockURLService)(nil).SaveURLBatch), arg0, arg1, arg2)
 }

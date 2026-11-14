@@ -9,6 +9,9 @@ import (
 )
 
 func TestUrlsFileStorage(t *testing.T) {
+	userID1 := "user_id_1"
+	userID2 := "user_id_2"
+
 	fs, err := NewUrlsFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
 
 	assert.NoError(t, err, "error while creating a db")
@@ -25,9 +28,9 @@ func TestUrlsFileStorage(t *testing.T) {
 	value4 := "value_4"
 	value5 := "value_5"
 
-	fs.Put(t.Context(), key1, value1)
-	fs.Put(t.Context(), key2, value2)
-	fs.Put(t.Context(), key3, value3)
+	fs.Put(t.Context(), key1, value1, userID1)
+	fs.Put(t.Context(), key2, value2, userID1)
+	fs.Put(t.Context(), key3, value3, userID1)
 	fs.PutBatch(t.Context(), []model.ValuesPair{
 		{
 			Key:   key4,
@@ -37,7 +40,7 @@ func TestUrlsFileStorage(t *testing.T) {
 			Key:   key5,
 			Value: value5,
 		},
-	})
+	}, userID2)
 
 	err = fs.read()
 	assert.NoError(t, err, "should not return an reading error")
@@ -67,6 +70,31 @@ func TestUrlsFileStorage(t *testing.T) {
 	assert.Error(t, err, "should return an error if key does not exist")
 	assert.Nil(t, noval, "should return nil value if key does not exist")
 
-	err = fs.Put(t.Context(), key1, "smth")
+	err = fs.Put(t.Context(), key1, "smth", userID1)
 	assert.Error(t, err, "should return an error for putting an existing key")
+
+	user1Res, err := fs.GetAllByUserId(t.Context(), userID1)
+	assert.NoError(t, err, "error while getting values for user 1")
+
+	user2Res, err := fs.GetAllByUserId(t.Context(), userID2)
+	assert.NoError(t, err, "error while getting values for user 2")
+
+	var user1Codes []string
+
+	for _, pair := range *user1Res {
+		user1Codes = append(user1Codes, pair.Key)
+	}
+
+	assert.Contains(t, user1Codes, key1)
+	assert.Contains(t, user1Codes, key2)
+	assert.Contains(t, user1Codes, key3)
+
+	var user2Codes []string
+
+	for _, pair := range *user2Res {
+		user2Codes = append(user2Codes, pair.Key)
+	}
+
+	assert.Contains(t, user2Codes, key4)
+	assert.Contains(t, user2Codes, key5)
 }

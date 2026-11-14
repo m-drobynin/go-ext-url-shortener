@@ -37,8 +37,8 @@ func NewUrlsFileStorage(filename string) (*UrlsFileStorage, error) {
 	return &fs, nil
 }
 
-func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string) error {
-	err := fs.db.Put(ctx, key, value)
+func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, userID string) error {
+	err := fs.db.Put(ctx, key, value, userID)
 
 	if err != nil {
 		return err
@@ -48,6 +48,7 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string) er
 		ShortURL:    key,
 		OriginalURL: value,
 		UUID:        uuid.NewV4().String(),
+		UserId:      userID,
 	}
 
 	data, err := json.Marshal(row)
@@ -67,9 +68,9 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string) er
 	return nil
 }
 
-func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair) error {
+func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair, userID string) error {
 	for _, pair := range pairs {
-		err := fs.Put(ctx, pair.Key, pair.Value)
+		err := fs.Put(ctx, pair.Key, pair.Value, userID)
 
 		if err != nil {
 			return err
@@ -87,6 +88,10 @@ func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*st
 	return fs.db.GetCode(ctx, originalURL)
 }
 
+func (fs *UrlsFileStorage) GetAllByUserId(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+	return fs.db.GetAllByUserId(ctx, userID)
+}
+
 func (fs *UrlsFileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
@@ -97,6 +102,8 @@ func (fs *UrlsFileStorage) read() error {
 		}
 
 		fs.db.rowsMap[row.ShortURL] = row.OriginalURL
+		fs.db.reverseURLMap[row.OriginalURL] = row.ShortURL
+		fs.db.userCodes[row.UUID][row.ShortURL] = struct{}{}
 	}
 
 	return fs.scanner.Err()

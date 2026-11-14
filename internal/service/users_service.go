@@ -23,10 +23,10 @@ func NewUsersServiceImpl(db storage.UsersDBProvider) *UsersServiceImpl {
 	return service
 }
 
-func (db *UsersServiceImpl) Create(ctx context.Context) (*model.User, error) {
-	return db.Create(ctx)
+func (service *UsersServiceImpl) Create(ctx context.Context) (*model.User, error) {
+	return service.db.Create(ctx)
 }
 
-func (db *UsersServiceImpl) GetByID(ctx context.Context, userID string) (*model.User, error) {
-	return db.GetByID(ctx, userID)
+func (service *UsersServiceImpl) GetByID(ctx context.Context, userID string) (*model.User, error) {
+	return service.db.GetByID(ctx, userID)
 }

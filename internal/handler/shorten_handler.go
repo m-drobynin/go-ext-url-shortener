@@ -78,7 +78,8 @@ func BuildShortenHandler(config SaveHandlerConfig, urlService service.URLService
 			return
 		}
 
-		code, err := urlService.SaveURL(r.Context(), request.URL)
+		userId := r.Context().Value("user_id").(string)
+		code, err := urlService.SaveURL(r.Context(), request.URL, userId)
 
 		if err != nil {
 			if errors.Is(err, service.ErrUniqueValue) {
