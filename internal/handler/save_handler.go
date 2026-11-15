@@ -46,9 +46,9 @@ func BuildSaveHandler(config SaveHandlerConfig, urlService service.URLService) f
 		}
 
 		originalURL := string(body)
-		userId := r.Context().Value(model.UserIDKey).(string)
+		userID := r.Context().Value(model.UserIDKey).(string)
 
-		code, err := urlService.SaveURL(r.Context(), originalURL, userId)
+		code, err := urlService.SaveURL(r.Context(), originalURL, userID)
 
 		if err != nil {
 			if errors.Is(err, service.ErrUniqueValue) {
