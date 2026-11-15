@@ -73,10 +73,10 @@ func TestUrlsFileStorage(t *testing.T) {
 	err = fs.Put(t.Context(), key1, "smth", userID1)
 	assert.Error(t, err, "should return an error for putting an existing key")
 
-	user1Res, err := fs.GetAllByUserId(t.Context(), userID1)
+	user1Res, err := fs.GetAllByUserID(t.Context(), userID1)
 	assert.NoError(t, err, "error while getting values for user 1")
 
-	user2Res, err := fs.GetAllByUserId(t.Context(), userID2)
+	user2Res, err := fs.GetAllByUserID(t.Context(), userID2)
 	assert.NoError(t, err, "error while getting values for user 2")
 
 	var user1Codes []string

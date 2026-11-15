@@ -58,7 +58,7 @@ func NewJwtHandler(h http.Handler, usersService service.UsersService) func(w htt
 			Name:  authCookieName,
 			Value: token,
 		})
-		ctx := context.WithValue(r.Context(), "user_id", user.UserID)
+		ctx := context.WithValue(r.Context(), model.UserIDKey, user.UserID)
 		h.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

@@ -17,7 +17,8 @@ type UsersPostgresDB struct {
 
 func NewUsersPostgresDB(db *sql.DB) (*UsersPostgresDB, error) {
 	res := &UsersPostgresDB{
-		db: db,
+		db:      db,
+		usersDB: NewUsersMemoryDatabase(),
 	}
 
 	return res, nil

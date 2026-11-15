@@ -48,7 +48,7 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, us
 		ShortURL:    key,
 		OriginalURL: value,
 		UUID:        uuid.NewV4().String(),
-		UserId:      userID,
+		UserID:      userID,
 	}
 
 	data, err := json.Marshal(row)
@@ -88,8 +88,8 @@ func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*st
 	return fs.db.GetCode(ctx, originalURL)
 }
 
-func (fs *UrlsFileStorage) GetAllByUserId(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
-	return fs.db.GetAllByUserId(ctx, userID)
+func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+	return fs.db.GetAllByUserID(ctx, userID)
 }
 
 func (fs *UrlsFileStorage) read() error {

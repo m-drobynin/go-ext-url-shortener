@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"m-drobynin/go-ext-url-shortener/internal/config"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 func prepareShortenRequest(t *testing.T, originalURL string) *http.Request {
-	ctx := context.WithValue(t.Context(), "user_id", "user_id")
+	ctx := context.WithValue(t.Context(), model.UserIDKey, "user_id")
 	reqBody := `{"url":"` + originalURL + `"}`
 	return httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(reqBody))
 }

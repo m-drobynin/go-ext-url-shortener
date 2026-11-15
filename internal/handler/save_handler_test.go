@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"m-drobynin/go-ext-url-shortener/internal/config"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
@@ -83,7 +84,7 @@ func TestSaveHandlerSuccess(t *testing.T) {
 	resCode := "example_code"
 
 	t.Run("valid request", func(t *testing.T) {
-		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		ctx := context.WithValue(t.Context(), model.UserIDKey, "user_id")
 		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(originalURL))
 		r.Header.Add("Content-Type", "text/plain")
 
@@ -108,7 +109,7 @@ func TestSaveHandlerConflict(t *testing.T) {
 	handler := BuildSaveHandler(&config, mockService)
 
 	t.Run("conflict", func(t *testing.T) {
-		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		ctx := context.WithValue(t.Context(), model.UserIDKey, "user_id")
 		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", strings.NewReader(existingURL))
 
 		r.Header.Add("Content-Type", "text/plain")

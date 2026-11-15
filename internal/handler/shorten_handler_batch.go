@@ -33,7 +33,7 @@ func saveBatch(ctx context.Context, config SaveHandlerConfig, service service.UR
 		urls = append(urls, pair.OriginalURL)
 	}
 
-	userId := ctx.Value("user_id").(string)
+	userId := ctx.Value(model.UserIDKey).(string)
 	pairs, err := service.SaveURLBatch(ctx, urls, userId)
 
 	if err != nil {

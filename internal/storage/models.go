@@ -10,7 +10,7 @@ type UrlsDBProvider interface {
 	PutBatch(ctx context.Context, pairs []model.ValuesPair, userID string) error
 	Get(ctx context.Context, key string) (*string, error)
 	GetCode(ctx context.Context, originalURL string) (*string, error)
-	GetAllByUserId(ctx context.Context, userID string) (*[]model.ValuesPair, error)
+	GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error)
 }
 
 type UsersDBProvider interface {

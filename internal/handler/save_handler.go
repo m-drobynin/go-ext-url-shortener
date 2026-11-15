@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/service"
 	"net/http"
 )
@@ -45,7 +46,7 @@ func BuildSaveHandler(config SaveHandlerConfig, urlService service.URLService) f
 		}
 
 		originalURL := string(body)
-		userId := r.Context().Value("user_id").(string)
+		userId := r.Context().Value(model.UserIDKey).(string)
 
 		code, err := urlService.SaveURL(r.Context(), originalURL, userId)
 

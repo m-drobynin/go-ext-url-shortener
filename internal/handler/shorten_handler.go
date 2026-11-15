@@ -78,7 +78,7 @@ func BuildShortenHandler(config SaveHandlerConfig, urlService service.URLService
 			return
 		}
 
-		userId := r.Context().Value("user_id").(string)
+		userId := r.Context().Value(model.UserIDKey).(string)
 		code, err := urlService.SaveURL(r.Context(), request.URL, userId)
 
 		if err != nil {

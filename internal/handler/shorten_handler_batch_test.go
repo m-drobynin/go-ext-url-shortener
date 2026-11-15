@@ -123,7 +123,7 @@ func TestBatchShortenHandlerSuccess(t *testing.T) {
 		reqJSONBytes, _ := json.Marshal(validRequest)
 		reader = bytes.NewReader(reqJSONBytes)
 
-		ctx := context.WithValue(t.Context(), "user_id", "user_id")
+		ctx := context.WithValue(t.Context(), model.UserIDKey, "user_id")
 		r := httptest.NewRequestWithContext(ctx, http.MethodPost, "/", reader)
 
 		r.Header.Add("Content-Type", jsonContentType)

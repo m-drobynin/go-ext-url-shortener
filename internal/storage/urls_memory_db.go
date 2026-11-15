@@ -90,7 +90,7 @@ func (db *UrlsMemoryDatabase) GetCode(ctx context.Context, originalURL string) (
 	return nil, model.ErrDBNotFound
 }
 
-func (db *UrlsMemoryDatabase) GetAllByUserId(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (db *UrlsMemoryDatabase) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
 	userCodes, ok := db.userCodes[userID]
 	var result []model.ValuesPair
 

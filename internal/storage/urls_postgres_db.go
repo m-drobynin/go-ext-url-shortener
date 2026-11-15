@@ -109,7 +109,7 @@ func (psDb *UrlsPostgresDB) GetCode(ctx context.Context, originalURL string) (*s
 	return &urlRow.ShortURL, nil
 }
 
-func (psDb *UrlsPostgresDB) GetAllByUserId(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
 	rows, err := psDb.db.QueryContext(ctx, findUrlsByUser, userID)
 
 	if err != nil {
