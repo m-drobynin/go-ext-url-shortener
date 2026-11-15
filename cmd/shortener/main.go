@@ -97,7 +97,11 @@ func prepareUsersStorage(config *config.AppConfig, db *sql.DB) (storage.UsersDBP
 func prepareApplication(config *config.AppConfig, urlsService service.URLService, usersService service.UsersService, log *zap.Logger) chi.Router {
 	r := chi.NewRouter()
 
-	r.Use(middleware.NewLoggerMiddleware(log), middleware.WithGzip, middleware.WithJwtAuthorization)
+	r.Use(
+		middleware.NewLoggerMiddleware(log),
+		middleware.WithGzip,
+		middleware.NewJwtAuthorizationMiddleware(usersService),
+	)
 
 	var saveHandler = handler.BuildSaveHandler(config, urlsService)
 	var getHandler = handler.BuildGetHandler(urlsService)

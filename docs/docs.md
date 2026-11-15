@@ -10,7 +10,7 @@ go run cmd/shortener/main.go -f "./file_storage.json"
 
 # mockgen example
 
-mockgen -destination=mocks/mock_store.go -package=mocks m-drobynin/go-ext-url-shortener/internal/service URLService 
+mockgen -destination=mocks/mock_store.go -package=mocks m-drobynin/go-ext-url-shortener/internal/service URLService,UsersService
 
 # handlers curls
 
