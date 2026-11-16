@@ -17,6 +17,7 @@ type URLService interface {
 	SaveURLBatch(ctx context.Context, urls []string, userID string) (*[]model.ValuesPair, error)
 	RetrieveURL(ctx context.Context, code string) (*string, error)
 	RetrieveCode(ctx context.Context, originalURL string) (*string, error)
+	GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error)
 }
 
 type URLServiceImpl struct {
@@ -84,4 +85,8 @@ func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*s
 
 func (service *URLServiceImpl) RetrieveCode(ctx context.Context, originalURL string) (*string, error) {
 	return service.db.GetCode(ctx, originalURL)
+}
+
+func (service *URLServiceImpl) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+	return service.db.GetAllByUserID(ctx, userID)
 }

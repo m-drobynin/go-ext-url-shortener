@@ -35,6 +35,21 @@ func (m *MockURLService) EXPECT() *MockURLServiceMockRecorder {
 	return m.recorder
 }
 
+// GetAllByUserID mocks base method.
+func (m *MockURLService) GetAllByUserID(arg0 context.Context, arg1 string) (*[]model.ValuesPair, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllByUserID", arg0, arg1)
+	ret0, _ := ret[0].(*[]model.ValuesPair)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllByUserID indicates an expected call of GetAllByUserID.
+func (mr *MockURLServiceMockRecorder) GetAllByUserID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllByUserID", reflect.TypeOf((*MockURLService)(nil).GetAllByUserID), arg0, arg1)
+}
+
 // RetrieveCode mocks base method.
 func (m *MockURLService) RetrieveCode(arg0 context.Context, arg1 string) (*string, error) {
 	m.ctrl.T.Helper()
