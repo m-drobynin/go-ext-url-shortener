@@ -40,12 +40,15 @@ func testRequest(t *testing.T, method,
 }
 
 func TestRouterHappyRoute(t *testing.T) {
-	database := storage.NewMemoryDatabase()
+	urlsDatabase := storage.NewUrlsMemoryDatabase()
+	usersDatabase := storage.NewUsersMemoryDatabase()
+
 	log, _ := logger.NewLogger("info")
-	service := service.NewURLServiceImpl(database, log)
+	urlsService := service.NewURLServiceImpl(urlsDatabase)
+	usersService := service.NewUsersServiceImpl(usersDatabase)
 	config := config.GetAppConfigDefaults()
 
-	handler := prepareApplication(&config, service, log)
+	handler := prepareApplication(&config, urlsService, usersService, log)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()

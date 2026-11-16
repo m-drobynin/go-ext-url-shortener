@@ -8,7 +8,7 @@ import (
 )
 
 func handleError(w http.ResponseWriter, err error) {
-	if errors.Is(err, model.ErrDBConflict) {
+	if errors.Is(err, model.ErrUrlsConflict) {
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(http.StatusText(http.StatusConflict)))
 		return
