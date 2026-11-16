@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"m-drobynin/go-ext-url-shortener/internal/config"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/mocks"
 	"net/http"
@@ -17,12 +18,13 @@ func TestUserUrlsHandlerSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	config := config.GetAppConfigDefaults()
 	service := mocks.NewMockURLService(ctrl)
 
-	handler := BuildUserUrlsHandler(service)
+	handler := BuildUserUrlsHandler(&config, service)
 
 	t.Run("get user urls", func(t *testing.T) {
-		r := httptest.NewRequest(http.MethodGet, "http://localhost/", nil)
+		r := httptest.NewRequest(http.MethodGet, config.GetBaseURL(), nil)
 		w := httptest.NewRecorder()
 		r = r.WithContext(context.WithValue(r.Context(), model.UserIDKey, "user_id"))
 
@@ -42,7 +44,7 @@ func TestUserUrlsHandlerSuccess(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &result)
 		assert.NoError(t, err)
 
-		assert.Equal(t, result[0].ShortURL, "url_code_1")
+		assert.Equal(t, result[0].ShortURL, config.GetBaseURL()+"/url_code_1")
 		assert.Equal(t, result[0].OriginalURL, "original_url_1")
 	})
 }

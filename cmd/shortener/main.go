@@ -107,7 +107,7 @@ func prepareApplication(config *config.AppConfig, urlsService service.URLService
 	var getHandler = handler.BuildGetHandler(urlsService)
 	var shortenHandler = handler.BuildShortenHandler(config, urlsService)
 	var batchShortenHandler = handler.BuildBatchShortenHandler(config, urlsService)
-	var userUrlsHandler = handler.BuildUserUrlsHandler(urlsService)
+	var userUrlsHandler = handler.BuildUserUrlsHandler(config, urlsService)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)

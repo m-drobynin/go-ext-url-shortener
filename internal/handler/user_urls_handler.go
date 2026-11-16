@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func BuildUserUrlsHandler(urlService service.URLService) func(w http.ResponseWriter, r *http.Request) {
+func BuildUserUrlsHandler(config SaveHandlerConfig, urlService service.URLService) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := r.Context().Value(model.UserIDKey).(string)
 
@@ -18,11 +18,16 @@ func BuildUserUrlsHandler(urlService service.URLService) func(w http.ResponseWri
 			return
 		}
 
+		if len(*userRows) == 0 {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		var rows []model.UrlsPairRow
 
 		for _, pair := range *userRows {
 			rows = append(rows, model.UrlsPairRow{
-				ShortURL:    pair.Key,
+				ShortURL:    config.GetBaseURL() + "/" + pair.Key,
 				OriginalURL: pair.Value,
 			})
 		}
