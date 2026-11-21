@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"os"
-	"uuid"
 )
 
 type UrlsFileStorage struct {
@@ -44,28 +43,13 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, us
 		return err
 	}
 
-	row := model.URLRow{
-		ShortURL:    key,
-		OriginalURL: value,
-		UUID:        uuid.NewV4().String(),
-		UserID:      userID,
-	}
-
-	data, err := json.Marshal(row)
+	row, err := fs.db.Get(ctx, key)
 
 	if err != nil {
 		return err
 	}
 
-	if _, err = fs.file.Write(data); err != nil {
-		return err
-	}
-
-	if _, err = fs.file.WriteString("\n"); err != nil {
-		return err
-	}
-
-	return nil
+	return fs.writeRow(row)
 }
 
 func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair, userID string) error {
@@ -92,6 +76,22 @@ func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*
 	return fs.db.GetAllByUserID(ctx, userID)
 }
 
+func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	for _, code := range codes {
+		row, err := fs.db.Get(ctx, code)
+
+		if err != nil {
+			return err
+		}
+
+		row.Deleted = true
+
+		fs.writeRow(row)
+	}
+
+	return fs.db.DeleteBatch(ctx, codes, userID)
+}
+
 func (fs *UrlsFileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
@@ -101,16 +101,26 @@ func (fs *UrlsFileStorage) read() error {
 			return err
 		}
 
-		fs.db.rowsMap[row.ShortURL] = row
-		fs.db.reverseURLMap[row.OriginalURL] = row.ShortURL
-		fs.db.userCodes[row.UUID][row.ShortURL] = struct{}{}
+		fs.db.addRow(row)
 	}
 
 	return fs.scanner.Err()
 }
 
-func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, userID string) error {
-	// find and update row
+func (fs *UrlsFileStorage) writeRow(row *model.URLRow) error {
+	data, err := json.Marshal(row)
 
-	return fs.db.DeleteBatch(ctx, codes, userID)
+	if err != nil {
+		return err
+	}
+
+	if _, err = fs.file.Write(data); err != nil {
+		return err
+	}
+
+	if _, err = fs.file.WriteString("\n"); err != nil {
+		return err
+	}
+
+	return nil
 }

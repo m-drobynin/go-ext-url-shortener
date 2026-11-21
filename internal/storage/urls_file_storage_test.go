@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUrlsFileStorage(t *testing.T) {
 	userID1 := "user_id_1"
 	userID2 := "user_id_2"
 
-	fs, err := NewUrlsFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
+	path := filepath.Join(t.TempDir(), "fs_test.json")
+	fs, err := NewUrlsFileStorage(path)
 
 	assert.NoError(t, err, "error while creating a db")
 
@@ -42,8 +44,11 @@ func TestUrlsFileStorage(t *testing.T) {
 		},
 	}, userID2)
 
-	err = fs.read()
-	assert.NoError(t, err, "should not return an reading error")
+	require.NoError(t, fs.file.Close())
+
+	fs, err = NewUrlsFileStorage(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = fs.file.Close() })
 
 	res1, err := fs.Get(t.Context(), key1)
 	assert.NoError(t, err, "error while getting value 1")

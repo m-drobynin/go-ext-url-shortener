@@ -40,20 +40,12 @@ func (db *UrlsMemoryDatabase) Put(ctx context.Context, key string, value string,
 		return model.ErrCodeConflict
 	}
 
-	_, ok = db.userCodes[userID]
-
-	if !ok {
-		db.userCodes[userID] = make(map[string]struct{})
-	}
-
-	db.rowsMap[key] = model.URLRow{
+	db.addRow(model.URLRow{
 		UUID:        uuid.NewV4().String(),
 		ShortURL:    key,
 		OriginalURL: value,
 		UserID:      userID,
-	}
-	db.reverseURLMap[value] = key
-	db.userCodes[userID][key] = struct{}{}
+	})
 
 	return nil
 }
@@ -107,6 +99,9 @@ func (db *UrlsMemoryDatabase) GetCode(ctx context.Context, originalURL string) (
 }
 
 func (db *UrlsMemoryDatabase) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	userCodes, ok := db.userCodes[userID]
 	var result []model.URLRow
 
@@ -126,14 +121,29 @@ func (db *UrlsMemoryDatabase) GetAllByUserID(ctx context.Context, userID string)
 }
 
 func (db *UrlsMemoryDatabase) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 
 	for _, code := range codes {
 		row, ok := db.rowsMap[code]
 
 		if ok && row.UserID == userID {
 			row.Deleted = true
+			db.rowsMap[code] = row
 		}
 	}
 
 	return nil
+}
+
+func (db *UrlsMemoryDatabase) addRow(row model.URLRow) {
+	_, ok := db.userCodes[row.UserID]
+
+	if !ok {
+		db.userCodes[row.UserID] = make(map[string]struct{})
+	}
+
+	db.rowsMap[row.ShortURL] = row
+	db.reverseURLMap[row.OriginalURL] = row.ShortURL
+	db.userCodes[row.UserID][row.ShortURL] = struct{}{}
 }
