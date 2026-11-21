@@ -11,10 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const insertURLSQL = `INSERT INTO urls (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)`
-const findURLSQL = `SELECT uuid, short_url, original_url, deleted FROM urls WHERE short_url=$1`
+const fields = `uuid, short_url, original_url, user_id, deleted`
+
+const insertURLSQL = `INSERT INTO urls (` + fields + `) VALUES ($1, $2, $3, $4, $5)`
+const findURLSQL = `SELECT ` + fields + ` FROM urls WHERE short_url=$1`
 const findByOriginalURLSQL = `SELECT short_url FROM urls WHERE original_url=$1`
-const findUrlsByUser = `SELECT uuid, short_url, original_url, deleted FROM urls WHERE user_id=$1`
+const findUrlsByUser = `SELECT ` + fields + ` FROM urls WHERE user_id=$1`
 const markDeletedURLSQL = `UPDATE urls SET deleted=true WHERE short_url=$1 AND user_id=$2`
 
 type UrlsPostgresDB struct {
@@ -30,7 +32,7 @@ func NewUrlsPostgresDB(db *sql.DB) (*UrlsPostgresDB, error) {
 }
 
 func (psDb *UrlsPostgresDB) Put(ctx context.Context, key string, value string, userID string) error {
-	_, err := psDb.db.ExecContext(ctx, insertURLSQL, uuid.NewV4().String(), key, value, userID)
+	_, err := psDb.db.ExecContext(ctx, insertURLSQL, uuid.NewV4().String(), key, value, userID, false)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -66,7 +68,7 @@ func (psDb *UrlsPostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPa
 	defer stmt.Close()
 
 	for _, pair := range pairs {
-		_, err := stmt.ExecContext(ctx, uuid.NewV4().String(), pair.Key, pair.Value, userID)
+		_, err := stmt.ExecContext(ctx, uuid.NewV4().String(), pair.Key, pair.Value, userID, false)
 
 		if err != nil {
 			return err
@@ -88,6 +90,10 @@ func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*model.URLRow,
 		}
 
 		return nil, err
+	}
+
+	if urlRow.Deleted {
+		return nil, model.ErrDBDeleted
 	}
 
 	return &urlRow, nil
