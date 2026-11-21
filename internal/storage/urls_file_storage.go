@@ -86,7 +86,12 @@ func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, user
 
 		if row.UserID == userID {
 			row.Deleted = true
-			fs.writeRow(row)
+
+			err = fs.writeRow(row)
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const jsonContentType = "application/json"
+
 func TestBatchShortenHandlerEmptyRows(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -24,8 +26,6 @@ func TestBatchShortenHandlerEmptyRows(t *testing.T) {
 	config := config.GetAppConfigDefaults()
 
 	handler := BuildBatchShortenHandler(&config, service)
-
-	jsonContentType := "application/json"
 
 	emptyRequest := []model.ShortenBatchRequestRow{}
 
@@ -82,7 +82,6 @@ func TestBatchShortenHandlerSuccess(t *testing.T) {
 
 	handler := BuildBatchShortenHandler(&config, service)
 
-	jsonContentType := "application/json"
 	validBodyMessageRaw, _ := json.Marshal([]model.ShortenBatchResponseRow{
 		{
 			CorrelationID: "id_1",
