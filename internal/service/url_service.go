@@ -15,9 +15,10 @@ const maxSaveAttempts = 10
 type URLService interface {
 	SaveURL(ctx context.Context, originalURL string, userID string) (*string, error)
 	SaveURLBatch(ctx context.Context, urls []string, userID string) (*[]model.ValuesPair, error)
-	RetrieveURL(ctx context.Context, code string) (*string, error)
+	RetrieveURL(ctx context.Context, code string) (*model.URLRow, error)
 	RetrieveCode(ctx context.Context, originalURL string) (*string, error)
-	GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error)
+	GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error)
+	DeleteBatch(ctx context.Context, codes []string, userID string) error
 }
 
 type URLServiceImpl struct {
@@ -79,7 +80,7 @@ func (service *URLServiceImpl) SaveURLBatch(ctx context.Context, urls []string, 
 	return &results, nil
 }
 
-func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*string, error) {
+func (service *URLServiceImpl) RetrieveURL(ctx context.Context, code string) (*model.URLRow, error) {
 	return service.db.Get(ctx, code)
 }
 
@@ -87,6 +88,10 @@ func (service *URLServiceImpl) RetrieveCode(ctx context.Context, originalURL str
 	return service.db.GetCode(ctx, originalURL)
 }
 
-func (service *URLServiceImpl) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (service *URLServiceImpl) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
 	return service.db.GetAllByUserID(ctx, userID)
+}
+
+func (service *URLServiceImpl) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	return service.db.DeleteBatch(ctx, codes, userID)
 }

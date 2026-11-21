@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUrlsFileStorage(t *testing.T) {
 	userID1 := "user_id_1"
 	userID2 := "user_id_2"
 
-	fs, err := NewUrlsFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
+	path := filepath.Join(t.TempDir(), "fs_test.json")
+	fs, err := NewUrlsFileStorage(path)
 
 	assert.NoError(t, err, "error while creating a db")
 
@@ -42,28 +44,31 @@ func TestUrlsFileStorage(t *testing.T) {
 		},
 	}, userID2)
 
-	err = fs.read()
-	assert.NoError(t, err, "should not return an reading error")
+	require.NoError(t, fs.file.Close())
+
+	fs, err = NewUrlsFileStorage(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = fs.file.Close() })
 
 	res1, err := fs.Get(t.Context(), key1)
 	assert.NoError(t, err, "error while getting value 1")
-	assert.Equal(t, res1, &value1)
+	assert.Equal(t, &res1.OriginalURL, &value1)
 
 	res2, err := fs.Get(t.Context(), key2)
 	assert.NoError(t, err, "error while getting value 2")
-	assert.Equal(t, res2, &value2)
+	assert.Equal(t, &res2.OriginalURL, &value2)
 
 	res3, err := fs.Get(t.Context(), key3)
 	assert.NoError(t, err, "error while getting value 3")
-	assert.Equal(t, res3, &value3)
+	assert.Equal(t, &res3.OriginalURL, &value3)
 
 	res4, err := fs.Get(t.Context(), key4)
 	assert.NoError(t, err, "error while getting value 4")
-	assert.Equal(t, res4, &value4)
+	assert.Equal(t, &res4.OriginalURL, &value4)
 
 	res5, err := fs.Get(t.Context(), key5)
 	assert.NoError(t, err, "error while getting value 5")
-	assert.Equal(t, res5, &value5)
+	assert.Equal(t, &res5.OriginalURL, &value5)
 
 	noval, err := fs.Get(t.Context(), "key_12345")
 
@@ -82,7 +87,7 @@ func TestUrlsFileStorage(t *testing.T) {
 	var user1Codes []string
 
 	for _, pair := range *user1Res {
-		user1Codes = append(user1Codes, pair.Key)
+		user1Codes = append(user1Codes, pair.ShortURL)
 	}
 
 	assert.Contains(t, user1Codes, key1)
@@ -92,7 +97,7 @@ func TestUrlsFileStorage(t *testing.T) {
 	var user2Codes []string
 
 	for _, pair := range *user2Res {
-		user2Codes = append(user2Codes, pair.Key)
+		user2Codes = append(user2Codes, pair.ShortURL)
 	}
 
 	assert.Contains(t, user2Codes, key4)

@@ -35,11 +35,25 @@ func (m *MockURLService) EXPECT() *MockURLServiceMockRecorder {
 	return m.recorder
 }
 
+// DeleteBatch mocks base method.
+func (m *MockURLService) DeleteBatch(arg0 context.Context, arg1 []string, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBatch", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBatch indicates an expected call of DeleteBatch.
+func (mr *MockURLServiceMockRecorder) DeleteBatch(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBatch", reflect.TypeOf((*MockURLService)(nil).DeleteBatch), arg0, arg1, arg2)
+}
+
 // GetAllByUserID mocks base method.
-func (m *MockURLService) GetAllByUserID(arg0 context.Context, arg1 string) (*[]model.ValuesPair, error) {
+func (m *MockURLService) GetAllByUserID(arg0 context.Context, arg1 string) (*[]model.URLRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllByUserID", arg0, arg1)
-	ret0, _ := ret[0].(*[]model.ValuesPair)
+	ret0, _ := ret[0].(*[]model.URLRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +80,10 @@ func (mr *MockURLServiceMockRecorder) RetrieveCode(arg0, arg1 interface{}) *gomo
 }
 
 // RetrieveURL mocks base method.
-func (m *MockURLService) RetrieveURL(arg0 context.Context, arg1 string) (*string, error) {
+func (m *MockURLService) RetrieveURL(arg0 context.Context, arg1 string) (*model.URLRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RetrieveURL", arg0, arg1)
-	ret0, _ := ret[0].(*string)
+	ret0, _ := ret[0].(*model.URLRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

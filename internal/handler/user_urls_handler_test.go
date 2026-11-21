@@ -28,10 +28,10 @@ func TestUserUrlsHandlerSuccess(t *testing.T) {
 		w := httptest.NewRecorder()
 		r = r.WithContext(context.WithValue(r.Context(), model.UserIDKey, "user_id"))
 
-		service.EXPECT().GetAllByUserID(gomock.Any(), "user_id").Return(&[]model.ValuesPair{
+		service.EXPECT().GetAllByUserID(gomock.Any(), "user_id").Return(&[]model.URLRow{
 			{
-				Key:   "url_code_1",
-				Value: "original_url_1",
+				ShortURL:    "url_code_1",
+				OriginalURL: "original_url_1",
 			},
 		}, nil)
 

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"os"
-	"uuid"
 )
 
 type UrlsFileStorage struct {
@@ -44,13 +43,77 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, us
 		return err
 	}
 
-	row := model.ShortenedURLRow{
-		ShortURL:    key,
-		OriginalURL: value,
-		UUID:        uuid.NewV4().String(),
-		UserID:      userID,
+	row, err := fs.db.Get(ctx, key)
+
+	if err != nil {
+		return err
 	}
 
+	return fs.writeRow(row)
+}
+
+func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair, userID string) error {
+	for _, pair := range pairs {
+		err := fs.Put(ctx, pair.Key, pair.Value, userID)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (fs *UrlsFileStorage) Get(ctx context.Context, key string) (*model.URLRow, error) {
+	return fs.db.Get(ctx, key)
+}
+
+func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
+	return fs.db.GetCode(ctx, originalURL)
+}
+
+func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
+	return fs.db.GetAllByUserID(ctx, userID)
+}
+
+func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	for _, code := range codes {
+		row, err := fs.db.Get(ctx, code)
+
+		if err != nil {
+			return err
+		}
+
+		if row.UserID == userID {
+			row.Deleted = true
+
+			err = fs.writeRow(row)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return fs.db.DeleteBatch(ctx, codes, userID)
+}
+
+func (fs *UrlsFileStorage) read() error {
+	for fs.scanner.Scan() {
+		data := fs.scanner.Bytes()
+		row := model.URLRow{}
+
+		if err := json.Unmarshal(data, &row); err != nil {
+			return err
+		}
+
+		fs.db.addRow(row)
+	}
+
+	return fs.scanner.Err()
+}
+
+func (fs *UrlsFileStorage) writeRow(row *model.URLRow) error {
 	data, err := json.Marshal(row)
 
 	if err != nil {
@@ -66,45 +129,4 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, us
 	}
 
 	return nil
-}
-
-func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPair, userID string) error {
-	for _, pair := range pairs {
-		err := fs.Put(ctx, pair.Key, pair.Value, userID)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (fs *UrlsFileStorage) Get(ctx context.Context, key string) (*string, error) {
-	return fs.db.Get(ctx, key)
-}
-
-func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*string, error) {
-	return fs.db.GetCode(ctx, originalURL)
-}
-
-func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
-	return fs.db.GetAllByUserID(ctx, userID)
-}
-
-func (fs *UrlsFileStorage) read() error {
-	for fs.scanner.Scan() {
-		data := fs.scanner.Bytes()
-		row := model.ShortenedURLRow{}
-
-		if err := json.Unmarshal(data, &row); err != nil {
-			return err
-		}
-
-		fs.db.rowsMap[row.ShortURL] = row.OriginalURL
-		fs.db.reverseURLMap[row.OriginalURL] = row.ShortURL
-		fs.db.userCodes[row.UUID][row.ShortURL] = struct{}{}
-	}
-
-	return fs.scanner.Err()
 }

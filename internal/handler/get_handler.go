@@ -24,7 +24,7 @@ func BuildGetHandler(service service.URLService) func(w http.ResponseWriter, r *
 			return
 		}
 
-		w.Header().Add("Location", *res)
+		w.Header().Add("Location", res.OriginalURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}
 }
