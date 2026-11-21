@@ -47,6 +47,8 @@ func (psDb *UrlsPostgresDB) Put(ctx context.Context, key string, value string, u
 				return err
 			}
 		}
+
+		return err
 	}
 
 	return nil
@@ -82,7 +84,7 @@ func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*model.URLRow,
 	row := psDb.db.QueryRowContext(ctx, findURLSQL, key)
 
 	var urlRow model.URLRow
-	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.Deleted)
+	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.UserID, &urlRow.Deleted)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -133,7 +135,7 @@ func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (
 
 	for rows.Next() {
 		var urlRow model.URLRow
-		err = rows.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.Deleted)
+		err = rows.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.UserID, &urlRow.Deleted)
 
 		if err != nil {
 			return nil, err
