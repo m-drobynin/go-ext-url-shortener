@@ -18,6 +18,12 @@ import (
 var existingURL = "http://existing.com/url"
 var existingURLCode = "existing_code"
 
+var existingUrlRow = model.URLRow{
+	UUID:        "uuid",
+	ShortURL:    existingURLCode,
+	OriginalURL: existingURL,
+}
+
 type SaveTestCase struct {
 	name        string
 	url         *string

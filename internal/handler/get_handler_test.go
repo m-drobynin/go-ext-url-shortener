@@ -69,7 +69,7 @@ func TestGetHandlerSuccess(t *testing.T) {
 	handler := BuildGetHandler(service)
 
 	t.Run("existing url", func(t *testing.T) {
-		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(&existingURL, nil)
+		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(&existingUrlRow, nil)
 
 		w, r := setupTestGetCall("existing_key")
 		handler(w, r)

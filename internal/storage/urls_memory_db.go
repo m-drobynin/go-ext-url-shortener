@@ -4,18 +4,19 @@ import (
 	"context"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"sync"
+	"uuid"
 )
 
 type UrlsMemoryDatabase struct {
 	mu            sync.Mutex
-	rowsMap       map[string]string
+	rowsMap       map[string]model.URLRow
 	reverseURLMap map[string]string
 	userCodes     map[string]map[string]struct{}
 }
 
 func NewUrlsMemoryDatabase() *UrlsMemoryDatabase {
 	var database = &UrlsMemoryDatabase{
-		rowsMap:       make(map[string]string),
+		rowsMap:       make(map[string]model.URLRow),
 		reverseURLMap: make(map[string]string),
 		userCodes:     make(map[string]map[string]struct{}),
 	}
@@ -45,7 +46,12 @@ func (db *UrlsMemoryDatabase) Put(ctx context.Context, key string, value string,
 		db.userCodes[userID] = make(map[string]struct{})
 	}
 
-	db.rowsMap[key] = value
+	db.rowsMap[key] = model.URLRow{
+		UUID:        uuid.NewV4().String(),
+		ShortURL:    key,
+		OriginalURL: value,
+		UserID:      userID,
+	}
 	db.reverseURLMap[value] = key
 	db.userCodes[userID][key] = struct{}{}
 
@@ -64,14 +70,18 @@ func (db *UrlsMemoryDatabase) PutBatch(ctx context.Context, pairs []model.Values
 	return nil
 }
 
-func (db *UrlsMemoryDatabase) Get(ctx context.Context, key string) (*string, error) {
+func (db *UrlsMemoryDatabase) Get(ctx context.Context, key string) (*model.URLRow, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	res, ok := db.rowsMap[key]
+	rowData, ok := db.rowsMap[key]
 
 	if ok {
-		return &res, nil
+		if rowData.Deleted {
+			return nil, model.ErrDBDeleted
+		}
+
+		return &rowData, nil
 	}
 
 	return nil, model.ErrDBNotFound
@@ -81,29 +91,49 @@ func (db *UrlsMemoryDatabase) GetCode(ctx context.Context, originalURL string) (
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	res, ok := db.reverseURLMap[originalURL]
+	code, ok := db.reverseURLMap[originalURL]
 
 	if ok {
-		return &res, nil
+		row := db.rowsMap[code]
+
+		if row.Deleted {
+			return nil, model.ErrDBDeleted
+		}
+
+		return &code, nil
 	}
 
 	return nil, model.ErrDBNotFound
 }
 
-func (db *UrlsMemoryDatabase) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (db *UrlsMemoryDatabase) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
 	userCodes, ok := db.userCodes[userID]
-	var result []model.ValuesPair
+	var result []model.URLRow
 
 	if !ok {
 		return &result, nil
 	}
 
 	for code := range userCodes {
-		result = append(result, model.ValuesPair{
-			Key:   code,
-			Value: db.rowsMap[code],
-		})
+		row := db.rowsMap[code]
+
+		if !row.Deleted {
+			result = append(result, row)
+		}
 	}
 
 	return &result, nil
+}
+
+func (db *UrlsMemoryDatabase) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+
+	for _, code := range codes {
+		row, ok := db.rowsMap[code]
+
+		if ok && row.UserID == userID {
+			row.Deleted = true
+		}
+	}
+
+	return nil
 }

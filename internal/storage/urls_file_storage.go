@@ -44,7 +44,7 @@ func (fs *UrlsFileStorage) Put(ctx context.Context, key string, value string, us
 		return err
 	}
 
-	row := model.ShortenedURLRow{
+	row := model.URLRow{
 		ShortURL:    key,
 		OriginalURL: value,
 		UUID:        uuid.NewV4().String(),
@@ -80,7 +80,7 @@ func (fs *UrlsFileStorage) PutBatch(ctx context.Context, pairs []model.ValuesPai
 	return nil
 }
 
-func (fs *UrlsFileStorage) Get(ctx context.Context, key string) (*string, error) {
+func (fs *UrlsFileStorage) Get(ctx context.Context, key string) (*model.URLRow, error) {
 	return fs.db.Get(ctx, key)
 }
 
@@ -88,23 +88,29 @@ func (fs *UrlsFileStorage) GetCode(ctx context.Context, originalURL string) (*st
 	return fs.db.GetCode(ctx, originalURL)
 }
 
-func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (fs *UrlsFileStorage) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
 	return fs.db.GetAllByUserID(ctx, userID)
 }
 
 func (fs *UrlsFileStorage) read() error {
 	for fs.scanner.Scan() {
 		data := fs.scanner.Bytes()
-		row := model.ShortenedURLRow{}
+		row := model.URLRow{}
 
 		if err := json.Unmarshal(data, &row); err != nil {
 			return err
 		}
 
-		fs.db.rowsMap[row.ShortURL] = row.OriginalURL
+		fs.db.rowsMap[row.ShortURL] = row
 		fs.db.reverseURLMap[row.OriginalURL] = row.ShortURL
 		fs.db.userCodes[row.UUID][row.ShortURL] = struct{}{}
 	}
 
 	return fs.scanner.Err()
+}
+
+func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	// find and update row
+
+	return fs.db.DeleteBatch(ctx, codes, userID)
 }

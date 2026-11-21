@@ -12,9 +12,10 @@ import (
 )
 
 const insertURLSQL = `INSERT INTO urls (uuid, short_url, original_url, user_id) VALUES ($1, $2, $3, $4)`
-const findURLSQL = `SELECT uuid, short_url, original_url FROM urls WHERE short_url=$1`
-const findByOriginalURLSQL = `SELECT uuid, short_url, original_url FROM urls WHERE original_url=$1`
-const findUrlsByUser = `SELECT uuid, short_url, original_url FROM urls WHERE user_id=$1`
+const findURLSQL = `SELECT uuid, short_url, original_url, deleted FROM urls WHERE short_url=$1`
+const findByOriginalURLSQL = `SELECT short_url FROM urls WHERE original_url=$1`
+const findUrlsByUser = `SELECT uuid, short_url, original_url, deleted FROM urls WHERE user_id=$1`
+const markDeletedURLSQL = `UPDATE urls SET deleted=true WHERE short_url=$1 AND user_id=$2`
 
 type UrlsPostgresDB struct {
 	db *sql.DB
@@ -75,11 +76,11 @@ func (psDb *UrlsPostgresDB) PutBatch(ctx context.Context, pairs []model.ValuesPa
 	return tx.Commit()
 }
 
-func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*string, error) {
+func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*model.URLRow, error) {
 	row := psDb.db.QueryRowContext(ctx, findURLSQL, key)
 
-	var urlRow model.ShortenedURLRow
-	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL)
+	var urlRow model.URLRow
+	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.Deleted)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -89,14 +90,14 @@ func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*string, error
 		return nil, err
 	}
 
-	return &urlRow.OriginalURL, nil
+	return &urlRow, nil
 }
 
 func (psDb *UrlsPostgresDB) GetCode(ctx context.Context, originalURL string) (*string, error) {
 	row := psDb.db.QueryRowContext(ctx, findByOriginalURLSQL, originalURL)
 
-	var urlRow model.ShortenedURLRow
-	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL)
+	var shortURL string
+	err := row.Scan(&shortURL)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -106,10 +107,10 @@ func (psDb *UrlsPostgresDB) GetCode(ctx context.Context, originalURL string) (*s
 		return nil, err
 	}
 
-	return &urlRow.ShortURL, nil
+	return &shortURL, nil
 }
 
-func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (*[]model.ValuesPair, error) {
+func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (*[]model.URLRow, error) {
 	rows, err := psDb.db.QueryContext(ctx, findUrlsByUser, userID)
 
 	if err != nil {
@@ -122,20 +123,17 @@ func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (
 
 	defer rows.Close()
 
-	var result []model.ValuesPair
+	var result []model.URLRow
 
 	for rows.Next() {
-		var urlRow model.ShortenedURLRow
-		err = rows.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL)
+		var urlRow model.URLRow
+		err = rows.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &urlRow.Deleted)
 
 		if err != nil {
 			return nil, err
 		}
 
-		result = append(result, model.ValuesPair{
-			Key:   urlRow.ShortURL,
-			Value: urlRow.OriginalURL,
-		})
+		result = append(result, urlRow)
 	}
 
 	err = rows.Err()
@@ -145,4 +143,30 @@ func (psDb *UrlsPostgresDB) GetAllByUserID(ctx context.Context, userID string) (
 	}
 
 	return &result, nil
+}
+
+func (psDb *UrlsPostgresDB) DeleteBatch(ctx context.Context, codes []string, userID string) error {
+	tx, err := psDb.db.Begin()
+
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, markDeletedURLSQL)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, code := range codes {
+		_, err := stmt.ExecContext(ctx, code, userID)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
