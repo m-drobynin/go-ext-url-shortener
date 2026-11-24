@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"m-drobynin/go-ext-url-shortener/internal/storage"
 	"m-drobynin/go-ext-url-shortener/internal/utils"
+
+	"go.uber.org/zap"
 )
 
 const codeLength = 10
@@ -21,13 +24,22 @@ type URLService interface {
 	DeleteBatch(ctx context.Context, codes []string, userID string) error
 }
 
-type URLServiceImpl struct {
-	db storage.UrlsDBProvider
+type BatchDeleteJob struct {
+	UserID string
+	Codes  []string
 }
 
-func NewURLServiceImpl(db storage.UrlsDBProvider) *URLServiceImpl {
+type URLServiceImpl struct {
+	db              storage.UrlsDBProvider
+	batchDeleteJobs chan BatchDeleteJob
+	log             *zap.Logger
+}
+
+func NewURLServiceImpl(db storage.UrlsDBProvider, log *zap.Logger) *URLServiceImpl {
 	service := &URLServiceImpl{
-		db: db,
+		db:              db,
+		batchDeleteJobs: make(chan BatchDeleteJob, 100),
+		log:             log,
 	}
 
 	return service
@@ -93,5 +105,31 @@ func (service *URLServiceImpl) GetAllByUserID(ctx context.Context, userID string
 }
 
 func (service *URLServiceImpl) DeleteBatch(ctx context.Context, codes []string, userID string) error {
-	return service.db.DeleteBatch(ctx, codes, userID)
+	job := BatchDeleteJob{
+		UserID: userID,
+		Codes:  codes,
+	}
+
+	select {
+	case service.batchDeleteJobs <- job:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (service *URLServiceImpl) RunBatchDeleteWorker(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case job, ok := <-service.batchDeleteJobs:
+			if !ok {
+				return
+			}
+			if err := service.db.DeleteBatch(ctx, job.Codes, job.UserID); err != nil {
+				log.Printf("error while removing the user %v batch %v", job.UserID, job.Codes)
+			}
+		}
+	}
 }

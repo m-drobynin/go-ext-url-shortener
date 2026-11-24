@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -58,8 +59,10 @@ func run() error {
 		return err
 	}
 
-	urlsService := service.NewURLServiceImpl(urlsStorage)
+	urlsService := service.NewURLServiceImpl(urlsStorage, log)
 	usersService := service.NewUsersServiceImpl(usersStorage)
+
+	go urlsService.RunBatchDeleteWorker(context.Background())
 
 	router := prepareApplication(config, urlsService, usersService, log)
 
