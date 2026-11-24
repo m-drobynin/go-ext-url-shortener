@@ -44,7 +44,7 @@ func TestRouterHappyRoute(t *testing.T) {
 	usersDatabase := storage.NewUsersMemoryDatabase()
 
 	log, _ := logger.NewLogger("info")
-	urlsService := service.NewURLServiceImpl(urlsDatabase)
+	urlsService := service.NewURLServiceImpl(urlsDatabase, log)
 	usersService := service.NewUsersServiceImpl(usersDatabase)
 	config := config.GetAppConfigDefaults()
 

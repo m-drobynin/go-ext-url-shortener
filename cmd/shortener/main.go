@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -58,8 +59,10 @@ func run() error {
 		return err
 	}
 
-	urlsService := service.NewURLServiceImpl(urlsStorage)
+	urlsService := service.NewURLServiceImpl(urlsStorage, log)
 	usersService := service.NewUsersServiceImpl(usersStorage)
+
+	go urlsService.RunBatchDeleteWorker(context.Background())
 
 	router := prepareApplication(config, urlsService, usersService, log)
 
@@ -108,12 +111,14 @@ func prepareApplication(config *config.AppConfig, urlsService service.URLService
 	var shortenHandler = handler.BuildShortenHandler(config, urlsService)
 	var batchShortenHandler = handler.BuildBatchShortenHandler(config, urlsService)
 	var userUrlsHandler = handler.BuildUserUrlsHandler(config, urlsService)
+	var deleteUrlsHandler = handler.BuildDeleteHandler(urlsService)
 
 	r.Get("/{urlCode}", getHandler)
 	r.Post("/", saveHandler)
 	r.Post("/api/shorten", shortenHandler)
 	r.Post("/api/shorten/batch", batchShortenHandler)
 	r.Get("/api/user/urls", userUrlsHandler)
+	r.Delete("/api/user/urls", deleteUrlsHandler)
 
 	return r
 }

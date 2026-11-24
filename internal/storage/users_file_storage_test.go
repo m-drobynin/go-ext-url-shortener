@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUsersFileStorage(t *testing.T) {
-	fs, err := NewUsersFileStorage(filepath.Join(t.TempDir(), "fs_test.json"))
+	path := filepath.Join(t.TempDir(), "fs_test.json")
+	fs, err := NewUsersFileStorage(path)
 
 	assert.NoError(t, err, "error while creating a db")
 
@@ -21,8 +23,11 @@ func TestUsersFileStorage(t *testing.T) {
 	user3, err := fs.Create(t.Context())
 	assert.NoError(t, err, "error while creating a user3")
 
-	err = fs.read()
-	assert.NoError(t, err, "should not return an reading error")
+	require.NoError(t, fs.file.Close())
+
+	fs, err = NewUsersFileStorage(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = fs.file.Close() })
 
 	res1, err := fs.GetByID(t.Context(), user1.UserID)
 	assert.NoError(t, err, "error while getting user 1")

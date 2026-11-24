@@ -27,8 +27,8 @@ func BuildUserUrlsHandler(config SaveHandlerConfig, urlService service.URLServic
 
 		for _, pair := range *userRows {
 			rows = append(rows, model.UrlsPairRow{
-				ShortURL:    config.GetBaseURL() + "/" + pair.Key,
-				OriginalURL: pair.Value,
+				ShortURL:    config.GetBaseURL() + "/" + pair.ShortURL,
+				OriginalURL: pair.OriginalURL,
 			})
 		}
 
