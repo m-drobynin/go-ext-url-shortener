@@ -86,7 +86,7 @@ func (psDb *UrlsPostgresDB) Get(ctx context.Context, key string) (*model.URLRow,
 	var urlRow model.URLRow
 	var userID sql.NullString
 
-	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, userID, &urlRow.Deleted)
+	err := row.Scan(&urlRow.UUID, &urlRow.ShortURL, &urlRow.OriginalURL, &userID, &urlRow.Deleted)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
