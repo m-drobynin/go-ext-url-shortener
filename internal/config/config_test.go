@@ -105,8 +105,15 @@ func TestGetAppConfig(t *testing.T) {
 				os.Args = append(os.Args, k, v)
 			}
 
-			for k, v := range tc.envArgs {
-				t.Setenv(k, v)
+			for _, key := range []string{
+				"SERVER_ADDRESS",
+				"BASE_URL",
+				"FILE_STORAGE_PATH",
+				"USERS_FILE_STORAGE_PATH",
+				"DATABASE_DSN",
+				"JWT_SECRET",
+			} {
+				t.Setenv(key, tc.envArgs[key])
 			}
 
 			res, err := GetAppConfig()
