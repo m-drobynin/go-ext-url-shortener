@@ -8,6 +8,11 @@ migrate -database "postgres://mdrobynin:@localhost:5432/mdrobynin?sslmode=disabl
 go run cmd/shortener/main.go -d "host=localhost user=mdrobynin password= dbname=mdrobynin sslmode=disable"
 go run cmd/shortener/main.go -f "./file_storage.json"
 
+# mockgen example
+
+mockgen -destination=mocks/mock_service.go -package=mocks m-drobynin/go-ext-url-shortener/internal/service URLService,UsersService
+mockgen -destination=mocks/mock_storage.go -package=mocks m-drobynin/go-ext-url-shortener/internal/storage UrlsDBProvider,UsersDBProvider
+
 # handlers curls
 
 curl -i -X POST 'http://localhost:8080/' -H 'Content-Type: text/plain' --data-raw 'https://example.com/article'

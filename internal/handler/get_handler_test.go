@@ -69,7 +69,7 @@ func TestGetHandlerSuccess(t *testing.T) {
 	handler := BuildGetHandler(service)
 
 	t.Run("existing url", func(t *testing.T) {
-		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(&existingURL, nil)
+		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(&existingURLRow, nil)
 
 		w, r := setupTestGetCall("existing_key")
 		handler(w, r)
@@ -77,5 +77,23 @@ func TestGetHandlerSuccess(t *testing.T) {
 		assert.Equal(t, http.StatusTemporaryRedirect, w.Code, "Код ответа не совпадает с ожидаемым")
 		var locationHeader = w.Result().Header.Get("Location")
 		assert.Equal(t, existingURL, locationHeader, "Заголовок Location не совпадает с ожидаемым")
+	})
+}
+
+func TestGetHandlerGone(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	service := mocks.NewMockURLService(ctrl)
+
+	handler := BuildGetHandler(service)
+
+	t.Run("existing url", func(t *testing.T) {
+		service.EXPECT().RetrieveURL(gomock.Any(), gomock.Any()).Return(nil, model.ErrDBDeleted)
+
+		w, r := setupTestGetCall("existing_key")
+		handler(w, r)
+
+		assert.Equal(t, http.StatusGone, w.Code, "Код ответа не совпадает с ожидаемым")
 	})
 }

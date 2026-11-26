@@ -1,0 +1,105 @@
+package storage
+
+import (
+	"m-drobynin/go-ext-url-shortener/internal/model"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestUrlsFileStorage(t *testing.T) {
+	userID1 := "user_id_1"
+	userID2 := "user_id_2"
+
+	path := filepath.Join(t.TempDir(), "fs_test.json")
+	fs, err := NewUrlsFileStorage(path)
+
+	assert.NoError(t, err, "error while creating a db")
+
+	key1 := "key_1"
+	key2 := "key_2"
+	key3 := "key_3"
+	key4 := "key_4"
+	key5 := "key_5"
+
+	value1 := "value_1"
+	value2 := "value_2"
+	value3 := "value_3"
+	value4 := "value_4"
+	value5 := "value_5"
+
+	fs.Put(t.Context(), key1, value1, userID1)
+	fs.Put(t.Context(), key2, value2, userID1)
+	fs.Put(t.Context(), key3, value3, userID1)
+	fs.PutBatch(t.Context(), []model.ValuesPair{
+		{
+			Key:   key4,
+			Value: value4,
+		},
+		{
+			Key:   key5,
+			Value: value5,
+		},
+	}, userID2)
+
+	require.NoError(t, fs.file.Close())
+
+	fs, err = NewUrlsFileStorage(path)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = fs.file.Close() })
+
+	res1, err := fs.Get(t.Context(), key1)
+	assert.NoError(t, err, "error while getting value 1")
+	assert.Equal(t, &res1.OriginalURL, &value1)
+
+	res2, err := fs.Get(t.Context(), key2)
+	assert.NoError(t, err, "error while getting value 2")
+	assert.Equal(t, &res2.OriginalURL, &value2)
+
+	res3, err := fs.Get(t.Context(), key3)
+	assert.NoError(t, err, "error while getting value 3")
+	assert.Equal(t, &res3.OriginalURL, &value3)
+
+	res4, err := fs.Get(t.Context(), key4)
+	assert.NoError(t, err, "error while getting value 4")
+	assert.Equal(t, &res4.OriginalURL, &value4)
+
+	res5, err := fs.Get(t.Context(), key5)
+	assert.NoError(t, err, "error while getting value 5")
+	assert.Equal(t, &res5.OriginalURL, &value5)
+
+	noval, err := fs.Get(t.Context(), "key_12345")
+
+	assert.Error(t, err, "should return an error if key does not exist")
+	assert.Nil(t, noval, "should return nil value if key does not exist")
+
+	err = fs.Put(t.Context(), key1, "smth", userID1)
+	assert.Error(t, err, "should return an error for putting an existing key")
+
+	user1Res, err := fs.GetAllByUserID(t.Context(), userID1)
+	assert.NoError(t, err, "error while getting values for user 1")
+
+	user2Res, err := fs.GetAllByUserID(t.Context(), userID2)
+	assert.NoError(t, err, "error while getting values for user 2")
+
+	var user1Codes []string
+
+	for _, pair := range *user1Res {
+		user1Codes = append(user1Codes, pair.ShortURL)
+	}
+
+	assert.Contains(t, user1Codes, key1)
+	assert.Contains(t, user1Codes, key2)
+	assert.Contains(t, user1Codes, key3)
+
+	var user2Codes []string
+
+	for _, pair := range *user2Res {
+		user2Codes = append(user2Codes, pair.ShortURL)
+	}
+
+	assert.Contains(t, user2Codes, key4)
+	assert.Contains(t, user2Codes, key5)
+}

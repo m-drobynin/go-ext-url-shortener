@@ -20,6 +20,12 @@ func handleError(w http.ResponseWriter, err error) {
 		return
 	}
 
+	if errors.Is(err, model.ErrDBDeleted) {
+		w.WriteHeader(http.StatusGone)
+		w.Write([]byte(http.StatusText(http.StatusGone)))
+		return
+	}
+
 	if errors.Is(err, ErrInternal) {
 		log.Printf("Error occured: %v", err)
 
