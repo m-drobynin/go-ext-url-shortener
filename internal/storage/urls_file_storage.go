@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"m-drobynin/go-ext-url-shortener/internal/model"
 	"os"
 )
@@ -81,6 +82,10 @@ func (fs *UrlsFileStorage) DeleteBatch(ctx context.Context, codes []string, user
 		row, err := fs.db.Get(ctx, code)
 
 		if err != nil {
+			if errors.Is(err, model.ErrDBDeleted) || errors.Is(err, model.ErrDBNotFound) {
+				continue
+			}
+
 			return err
 		}
 

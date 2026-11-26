@@ -13,11 +13,16 @@ type AppConfig struct {
 	FileStoragePath      string
 	UsersFileStoragePath string
 	DatabaseDSN          string
+	Secrets              Secrets
 }
 
 type NetAddress struct {
 	Host string
 	Port int
+}
+
+type Secrets struct {
+	JWT string
 }
 
 type EnvConfig struct {
@@ -26,6 +31,7 @@ type EnvConfig struct {
 	FileStoragePath      string `env:"FILE_STORAGE_PATH"`
 	UsersFileStoragePath string `env:"USERS_FILE_STORAGE_PATH"`
 	DatabaseDSN          string `env:"DATABASE_DSN"`
+	JWTSecret            string `env:"JWT_SECRET"`
 }
 
 func (address *NetAddress) String() string {
@@ -80,6 +86,10 @@ func (config *AppConfig) SetFromEnv(envConfig EnvConfig) error {
 
 	if envConfig.DatabaseDSN != "" {
 		config.DatabaseDSN = envConfig.DatabaseDSN
+	}
+
+	if envConfig.JWTSecret != "" {
+		config.Secrets.JWT = envConfig.JWTSecret
 	}
 
 	return nil

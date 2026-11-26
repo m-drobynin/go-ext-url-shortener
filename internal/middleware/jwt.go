@@ -13,7 +13,6 @@ import (
 )
 
 const authCookieName = "Authorization"
-const secretKey = "supersecretkey"
 
 var ErrInvalidJWT = errors.New("invalid jwt")
 var ErrUnexpectedSigning = errors.New("unexpected signing")
@@ -24,15 +23,15 @@ type Claims struct {
 	UserID string
 }
 
-func NewJwtAuthorizationMiddleware(usersService service.UsersService) func(http.Handler) http.Handler {
+func NewJwtAuthorizationMiddleware(usersService service.UsersService, jwtSecret string) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(NewJwtHandler(h, usersService))
+		return http.HandlerFunc(NewJwtHandler(h, usersService, jwtSecret))
 	}
 }
 
-func NewJwtHandler(h http.Handler, usersService service.UsersService) func(w http.ResponseWriter, r *http.Request) {
+func NewJwtHandler(h http.Handler, usersService service.UsersService, jwtSecret string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, err := processJWTAuth(r, usersService)
+		user, err := processJWTAuth(r, usersService, jwtSecret)
 
 		if err != nil {
 			if errors.Is(err, ErrUnauthorized) {
@@ -46,7 +45,7 @@ func NewJwtHandler(h http.Handler, usersService service.UsersService) func(w htt
 			return
 		}
 
-		token, err := buildJWT(user.UserID)
+		token, err := buildJWT(user.UserID, jwtSecret)
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -66,14 +65,14 @@ func NewJwtHandler(h http.Handler, usersService service.UsersService) func(w htt
 	}
 }
 
-func processJWTAuth(r *http.Request, usersService service.UsersService) (*model.User, error) {
+func processJWTAuth(r *http.Request, usersService service.UsersService, jwtSecret string) (*model.User, error) {
 	cookie, err := r.Cookie(authCookieName)
 
 	if err != nil {
 		return usersService.Create(r.Context())
 	}
 
-	claims, err := getTokenClaims(cookie.Value)
+	claims, err := getTokenClaims(cookie.Value, jwtSecret)
 
 	if err != nil {
 		if errors.Is(err, ErrInvalidJWT) {
@@ -104,12 +103,12 @@ func processJWTAuth(r *http.Request, usersService service.UsersService) (*model.
 	return user, nil
 }
 
-func buildJWT(userID string) (string, error) {
+func buildJWT(userID string, jwtSecret string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
 	})
 
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString([]byte(jwtSecret))
 
 	if err != nil {
 		return "", err
@@ -118,7 +117,7 @@ func buildJWT(userID string) (string, error) {
 	return tokenString, nil
 }
 
-func getTokenClaims(tokenString string) (*Claims, error) {
+func getTokenClaims(tokenString string, jwtSecret string) (*Claims, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims,
@@ -127,11 +126,11 @@ func getTokenClaims(tokenString string) (*Claims, error) {
 				return nil, fmt.Errorf("%w: %v", ErrUnexpectedSigning, t.Header["alg"])
 			}
 
-			return []byte(secretKey), nil
+			return []byte(jwtSecret), nil
 		})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", ErrInvalidJWT, err)
 	}
 
 	if !token.Valid {

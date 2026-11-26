@@ -16,19 +16,21 @@ import (
 
 var mockHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
+const testJWTSecret = "secret"
+
 func TestJwtAuthorizationMiddlewareSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	service := mocks.NewMockUsersService(ctrl)
 
 	r := chi.NewRouter()
-	r.Get("/", NewJwtHandler(mockHandler, service))
+	r.Get("/", NewJwtHandler(mockHandler, service, testJWTSecret))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	userID := "test_user_id"
-	jwtToken, err := buildJWT(userID)
+	jwtToken, err := buildJWT(userID, testJWTSecret)
 	assert.NoError(t, err, "error while building jwt")
 
 	req := resty.New().R()
@@ -57,7 +59,7 @@ func TestJwtAuthorizationMiddlewareNoCookie(t *testing.T) {
 	service := mocks.NewMockUsersService(ctrl)
 
 	r := chi.NewRouter()
-	r.Get("/", NewJwtHandler(mockHandler, service))
+	r.Get("/", NewJwtHandler(mockHandler, service, testJWTSecret))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -84,13 +86,13 @@ func TestJwtAuthorizationMiddlewareNoUserID(t *testing.T) {
 	service := mocks.NewMockUsersService(ctrl)
 
 	r := chi.NewRouter()
-	r.Get("/", NewJwtHandler(mockHandler, service))
+	r.Get("/", NewJwtHandler(mockHandler, service, testJWTSecret))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	userID := "test_user_id"
-	jwtToken, err := buildJWT(userID)
+	jwtToken, err := buildJWT(userID, testJWTSecret)
 	assert.NoError(t, err, "error while building jwt")
 
 	req := resty.New().R()

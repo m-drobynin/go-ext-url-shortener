@@ -19,6 +19,7 @@ func GetAppConfigDefaults() AppConfig {
 		},
 		BaseURL:              "http://" + localhost,
 		UsersFileStoragePath: "users.json",
+		Secrets:              Secrets{},
 	}
 }
 
@@ -35,6 +36,7 @@ func GetAppConfig() (*AppConfig, error) {
 	flag.StringVar(&config.FileStoragePath, "f", config.FileStoragePath, "file storage path")
 	flag.StringVar(&config.UsersFileStoragePath, "uf", config.UsersFileStoragePath, "users file storage path")
 	flag.StringVar(&config.DatabaseDSN, "d", config.DatabaseDSN, "database connection string")
+	flag.StringVar(&config.Secrets.JWT, "sec_jwt", config.Secrets.JWT, "jwt secret token")
 
 	flag.Parse()
 

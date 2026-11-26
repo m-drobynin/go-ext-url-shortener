@@ -18,6 +18,9 @@ func TestGetAppConfig(t *testing.T) {
 		BaseURL:         "http://localhost:1234",
 		FileStoragePath: "./path.json",
 		DatabaseDSN:     "database_connection_string",
+		Secrets: Secrets{
+			JWT: "jwt_secret",
+		},
 	}
 
 	cases := []struct {
@@ -47,6 +50,7 @@ func TestGetAppConfig(t *testing.T) {
 				"BASE_URL":          "http://localhost:1234",
 				"FILE_STORAGE_PATH": "./path.json",
 				"DATABASE_DSN":      "database_connection_string",
+				"JWT_SECRET":        "jwt_secret",
 			},
 			cmdArgs:        map[string]string{},
 			expectedConfig: expectedConfig,
@@ -55,10 +59,11 @@ func TestGetAppConfig(t *testing.T) {
 			name:    "with cmd only",
 			envArgs: map[string]string{},
 			cmdArgs: map[string]string{
-				"-a": "localhost:1234",
-				"-b": "http://localhost:1234",
-				"-f": "./path.json",
-				"-d": "database_connection_string",
+				"-a":       "localhost:1234",
+				"-b":       "http://localhost:1234",
+				"-f":       "./path.json",
+				"-d":       "database_connection_string",
+				"-sec_jwt": "jwt_secret",
 			},
 			expectedConfig: expectedConfig,
 		},
@@ -69,12 +74,14 @@ func TestGetAppConfig(t *testing.T) {
 				"BASE_URL":          "http://localhost:1234",
 				"FILE_STORAGE_PATH": "./path.json",
 				"DATABASE_DSN":      "database_connection_string",
+				"JWT_SECRET":        "jwt_secret",
 			},
 			cmdArgs: map[string]string{
-				"-a": "localhost:4321",
-				"-b": "http://localhost:4321",
-				"-f": "./cmd_path.json",
-				"-d": "another_database_connection_string",
+				"-a":       "localhost:4321",
+				"-b":       "http://localhost:4321",
+				"-f":       "./cmd_path.json",
+				"-d":       "another_database_connection_string",
+				"-sec_jwt": "another_jwt_secret",
 			},
 			expectedConfig: expectedConfig,
 		},
@@ -106,6 +113,7 @@ func TestGetAppConfig(t *testing.T) {
 
 			assert.Equal(t, tc.expectedConfig.FileStoragePath, res.FileStoragePath, "File storage paths does not match")
 			assert.Equal(t, tc.expectedConfig.DatabaseDSN, res.DatabaseDSN, "DB conntection strings does not match")
+			assert.Equal(t, tc.expectedConfig.Secrets.JWT, res.Secrets.JWT, "JWT secrets does not match")
 
 			assert.NoError(t, err)
 			tcNetAddr := tc.expectedConfig.NetAddress

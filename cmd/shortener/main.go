@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"m-drobynin/go-ext-url-shortener/internal/config"
@@ -18,6 +19,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var ErrJWTSecretEmpty = errors.New("no jwt secret token provided")
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
@@ -29,6 +32,10 @@ func run() error {
 
 	if err != nil {
 		return err
+	}
+
+	if config.Secrets.JWT == "" {
+		return ErrJWTSecretEmpty
 	}
 
 	log, err := logger.NewLogger("info")
@@ -103,7 +110,7 @@ func prepareApplication(config *config.AppConfig, urlsService service.URLService
 	r.Use(
 		middleware.NewLoggerMiddleware(log),
 		middleware.WithGzip,
-		middleware.NewJwtAuthorizationMiddleware(usersService),
+		middleware.NewJwtAuthorizationMiddleware(usersService, config.Secrets.JWT),
 	)
 
 	var saveHandler = handler.BuildSaveHandler(config, urlsService)
